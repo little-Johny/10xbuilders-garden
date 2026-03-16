@@ -81,9 +81,4 @@ Cubre Nivel 1 + 2, más:
 Al terminar el review, el código debe poder integrarse **sin deuda técnica visible**.
 Si encontraste algo que no puedes resolver ahora, abre un ticket — no hagas commit con `// TODO: fix this`.
 
----
 
-## Referencia
-
-Para el detalle completo de cada punto: [protocolo-review-ia.md](protocolo-review-ia.md)
-Para el contexto del ciclo completo BPIR: [plantilla-brief-ia.md](plantilla-brief-ia.md)
