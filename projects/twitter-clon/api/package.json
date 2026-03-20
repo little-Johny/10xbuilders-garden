@@ -1,0 +1,16 @@
+{
+  "name": "twitter-clon-api",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "dev": "node --watch src/server.js",
+    "start": "node src/server.js",
+    "test": "node -e \"console.log('API: sin suite Jest aún; usar test:app desde la raíz.')\" && exit 0"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.0",
+    "cors": "^2.8.5",
+    "express": "^4.21.2"
+  }
+}
