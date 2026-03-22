@@ -16,7 +16,8 @@
     "supabase:gen": "cd api && ( [ -z \"$SUPABASE_PROJECT_ID\" ] && echo 'Configura SUPABASE_PROJECT_ID' && exit 1; npx supabase gen types typescript --project-id \"$SUPABASE_PROJECT_ID\" > src/types/supabase.ts )"
   },
   "devDependencies": {
-    "concurrently": "^9.1.2"
+    "concurrently": "^9.1.2",
+    "supabase": "^2.82.0"
   },
   "engines": {
     "node": ">=18"
