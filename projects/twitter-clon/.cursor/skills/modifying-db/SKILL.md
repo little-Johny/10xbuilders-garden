@@ -14,9 +14,11 @@ Procedimiento para cambios de esquema con el CLI de Supabase. **Directorio de tr
 
 ## 1. Crear una migración
 
+**No ejecutar** `migration new` en modo interactivo (esperar prompts en terminal). En agentes, CI o scripts usar siempre **`--yes`** para que el CLI no quede bloqueado.
+
 ```bash
 cd /home/johny/dev/personal/10xbuilders-garden/projects/twitter-clon
-npx supabase migration new nombre_descriptivo_snake_case
+npx supabase migration new nombre_descriptivo_snake_case --yes
 ```
 
 Esto genera un archivo SQL nuevo bajo `supabase/migrations/`. Editar ese archivo con el DDL/DML necesario (idempotencia y orden según buenas prácticas SQL).
@@ -39,7 +41,7 @@ npx supabase migration up
 
 Aplica las migraciones pendientes al **Postgres local** gestionado por Supabase CLI.
 
-## 4(Opcional). Si el estado de migraciones se corrompe
+## 4 (opcional). Si el estado de migraciones se corrompe
 
 Cuando el historial o la base local quedan inconsistentes y no basta con `repair`:
 
@@ -53,7 +55,7 @@ Reinicia la base local y **vuelve a aplicar todas** las migraciones desde `supab
 
 | Acción | Comando (desde raíz `twitter-clon/`) |
 |--------|----------------------------------------|
-| Nueva migración | `npx supabase migration new <nombre>` |
+| Nueva migración | `npx supabase migration new <nombre> --yes` |
 | Aplicar en local | `npx supabase migration up` |
 | Reset local (corrupción / empezar limpio) | `npx supabase db reset` |
 
