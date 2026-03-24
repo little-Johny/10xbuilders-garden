@@ -1,7 +1,7 @@
 ---
 title: "MCP en Practica: Supabase Local + Skills"
 week: 2
-lesson: 5
+lesson: 6
 tags: [mcp, supabase, docker, skills, cursor, postgresql, migraciones]
 date: 2026-03-22
 status: draft
