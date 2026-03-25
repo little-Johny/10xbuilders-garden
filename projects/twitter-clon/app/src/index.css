@@ -1,3 +1,21 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  body {
+    @apply min-h-screen bg-x-black text-x-text font-sans;
+  }
+}
+
+@layer components {
+  .x-input {
+    @apply w-full rounded border border-xline bg-black px-3 py-2.5 text-[15px] text-x-text placeholder-x-secondary outline-none transition focus:border-xblue focus:ring-1 focus:ring-xblue;
+  }
+  .x-btn-primary {
+    @apply rounded-full bg-x-text px-5 py-2 text-[15px] font-bold text-x-black transition hover:bg-opacity-90 disabled:cursor-not-allowed disabled:opacity-40;
+  }
+  .x-link {
+    @apply text-xblue hover:underline;
+  }
+}

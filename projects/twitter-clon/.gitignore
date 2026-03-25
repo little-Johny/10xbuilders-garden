@@ -25,3 +25,6 @@ supabase/.temp
 # Test
 coverage/
 .nyc_output/
+
+# E2E / agent-browser (evidencia visual local)
+capturas/

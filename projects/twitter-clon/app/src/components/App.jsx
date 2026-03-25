@@ -1,9 +1,18 @@
-function App() {
+import { Navigate, Route, Routes } from 'react-router-dom'
+import { AuthProvider } from '../contexts/AuthContext'
+import FeedPage from '../pages/FeedPage'
+import LoginPage from '../pages/LoginPage'
+import RegisterPage from '../pages/RegisterPage'
+
+export default function App() {
   return (
-    <main className="min-h-screen bg-gray-950 text-white flex items-center justify-center">
-      <h1 className="text-2xl font-semibold">Twitter Clon</h1>
-    </main>
+    <AuthProvider>
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/" element={<FeedPage />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </AuthProvider>
   )
 }
-
-export default App
