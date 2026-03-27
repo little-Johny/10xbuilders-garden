@@ -48,30 +48,23 @@ alwaysApply: true
 1. **Tool & Skill Discovery:** Antes de planificar, revisa tus herramientas y Skills disponibles. Si existe una Skill específica para la tarea, úsala prioritariamente.
 2. **Verificación Delegada:** Delega SIEMPRE la validación final al subagente `qa-engineer`.
 3. **Estilo:** Si el linter falla, corrígelo. No inventes reglas de estilo, sigue la config existente.
-4. **TDD Obligatorio:** No se escribe código de producción sin un test que falle primero. Sin excepciones.
 
 # Flujo de Implementación
 El flujo obligatorio para cualquier feature o cambio es:
 
 1. **Diseño y Casos de Uso:** Entiende el escenario y define los criterios de aceptación.
 2. **Planificación:** Diseña la solución para cumplir esos casos de uso.
-3. **TDD (Red-Green-Refactor):**
-   - **Red:** Escribe un test que describa el comportamiento esperado. Ejecútalo y confirma que FALLA.
-   - **Green:** Escribe el código MÍNIMO necesario para que el test pase. Nada más.
-   - **Refactor:** Limpia el código sin cambiar el comportamiento. Los tests deben seguir pasando.
-   - Repite el ciclo por cada caso de uso hasta completar el feature.
+3. **Implementación:** Escribe el código necesario para cumplir con los casos de uso definidos, manteniendo el código limpio y refactorizado.
 4. **Verificación QA:** Invoca al subagente `qa-engineer` pasándole EXPLÍCITAMENTE los casos de prueba del feature. Espera su reporte antes de dar la tarea por finalizada.
 
 # Principios de Implementación
 1. **DRY:** No repitas código; abstrae lógica reutilizable.
 2. **Simplicidad primero:** Evita la sobre-ingeniería. La solución más simple suele ser la correcta.
-3. **Test-first siempre:** Los tests guían la implementación, no al revés.
-4. **Incrementos pequeños:** Cada ciclo Red-Green-Refactor debe ser un paso pequeño y verificable.
-5. **Frontend desacoplado:** Los componentes React nunca importan ni llaman a Supabase directamente. Toda lógica de datos va en `api/`, y el frontend consume endpoints/funciones de esa capa.
+3. **Incrementos pequeños:** Cada cambio debe ser un paso pequeño y verificable.
+4. **Frontend desacoplado:** Los componentes React nunca importan ni llaman a Supabase directamente. Toda lógica de datos va en `api/`, y el frontend consume endpoints/funciones de esa capa.
 
 # Debugging
 Cuando se reporte un bug:
 1. **Analiza:** Identifica la causa raíz. No empieces a parchear sin entender el problema.
-2. **Test del bug:** Escribe un test que reproduzca el fallo (debe fallar).
-3. **Fix:** Implementa la corrección mínima para que el test pase.
-4. **Verifica:** Delega al subagente `qa-engineer` para confirmar la resolución.
+2. **Fix:** Implementa la corrección mínima para resolver el fallo.
+3. **Verifica:** Delega al subagente `qa-engineer` para confirmar la resolución.
