@@ -4,6 +4,14 @@ import { MemoryRouter } from 'react-router-dom'
 import { AuthProvider } from '../src/contexts/AuthContext'
 import FeedPage from '../src/pages/FeedPage'
 
+const SESSION = {
+  access_token: 'test-token',
+  refresh_token: 'r',
+  expires_at: 999,
+  user: { id: 'uid', email: 'a@b.com' },
+  profile: { username: 'testuser', display_name: 'Test User', avatar_url: null },
+}
+
 describe('FeedPage', () => {
   beforeEach(() => {
     localStorage.clear()
@@ -12,15 +20,7 @@ describe('FeedPage', () => {
 
   it('publica un tweet con Authorization Bearer', async () => {
     const user = userEvent.setup()
-    localStorage.setItem(
-      'tc_session',
-      JSON.stringify({
-        access_token: 'test-token',
-        refresh_token: 'r',
-        expires_at: 999,
-        user: { id: 'uid', email: 'a@b.com' },
-      })
-    )
+    localStorage.setItem('tc_session', JSON.stringify(SESSION))
 
     global.fetch
       .mockResolvedValueOnce({
@@ -77,5 +77,36 @@ describe('FeedPage', () => {
         body: JSON.stringify({ content: 'Hola mundo' }),
       })
     )
+  })
+
+  it('los tweets muestran link al perfil del autor', async () => {
+    localStorage.setItem('tc_session', JSON.stringify(SESSION))
+
+    global.fetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        tweets: [
+          {
+            id: 't1',
+            content: 'Tweet de prueba',
+            created_at: '2024-01-01T00:00:00.000Z',
+            author_id: 'uid2',
+            profiles: { username: 'author', display_name: 'Author Name', avatar_url: null },
+          },
+        ],
+      }),
+    })
+
+    render(
+      <MemoryRouter>
+        <AuthProvider>
+          <FeedPage />
+        </AuthProvider>
+      </MemoryRouter>
+    )
+
+    // Hay dos links por autor: avatar (aria-label) y nombre (texto)
+    const links = await screen.findAllByRole('link', { name: /author name/i })
+    expect(links.every((l) => l.getAttribute('href') === '/profile/author')).toBe(true)
   })
 })
