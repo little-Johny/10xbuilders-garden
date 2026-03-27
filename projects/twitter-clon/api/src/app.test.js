@@ -50,4 +50,37 @@ describe('API HTTP', () => {
       .send({ content: 'x'.repeat(281) })
     expect(res.status).toBe(400)
   })
+
+  it('GET /profiles/:username sin usuario devuelve 404', async () => {
+    const res = await request(app).get('/profiles/')
+    expect(res.status).toBe(404)
+  })
+
+  it('PATCH /profiles/me sin Authorization devuelve 401', async () => {
+    const res = await request(app)
+      .patch('/profiles/me')
+      .send({ display_name: 'Nuevo' })
+    expect(res.status).toBe(401)
+  })
+
+  it('PATCH /profiles/me sin campos devuelve 400', async () => {
+    const res = await request(app)
+      .patch('/profiles/me')
+      .set('Authorization', 'Bearer fake-token')
+      .send({})
+    expect(res.status).toBe(400)
+  })
+
+  it('POST /profiles/me/avatar sin Authorization devuelve 401', async () => {
+    const res = await request(app)
+      .post('/profiles/me/avatar')
+    expect(res.status).toBe(401)
+  })
+
+  it('POST /profiles/me/avatar sin archivo devuelve 400', async () => {
+    const res = await request(app)
+      .post('/profiles/me/avatar')
+      .set('Authorization', 'Bearer fake-token')
+    expect(res.status).toBe(400)
+  })
 })
