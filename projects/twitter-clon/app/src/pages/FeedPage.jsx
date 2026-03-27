@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Navigate } from 'react-router-dom'
+import { Link, Navigate } from 'react-router-dom'
+import { Avatar } from '../components/Avatar'
 import { BrandLogo } from '../components/BrandLogo'
 import { useAuth } from '../contexts/AuthContext'
 
 export default function FeedPage() {
-  const { session, ready, logout } = useAuth()
+  const { session, profile, ready, logout } = useAuth()
   const [tweets, setTweets] = useState([])
   const [loading, setLoading] = useState(true)
   const [content, setContent] = useState('')
@@ -74,13 +75,15 @@ export default function FeedPage() {
     return <Navigate to="/login" replace />
   }
 
-  const displayAuthor = (tweet) => {
+  const getAuthorInfo = (tweet) => {
     const p = Array.isArray(tweet.profiles)
       ? tweet.profiles[0]
       : tweet.profiles
     const name = p?.display_name || p?.username || 'Usuario'
-    const handle = p?.username ? `@${p.username}` : ''
-    return { name, handle }
+    const username = p?.username ?? null
+    const handle = username ? `@${username}` : ''
+    const avatarUrl = p?.avatar_url ?? null
+    return { name, handle, username, avatarUrl }
   }
 
   return (
@@ -93,13 +96,28 @@ export default function FeedPage() {
               Inicio
             </h1>
           </div>
-          <button
-            type="button"
-            onClick={() => logout()}
-            className="rounded-full border border-xline px-4 py-1.5 text-[13px] font-bold text-x-text transition hover:bg-x-hover"
-          >
-            Cerrar sesión
-          </button>
+          <div className="flex items-center gap-3">
+            {profile?.username && (
+              <Link
+                to={`/profile/${profile.username}`}
+                aria-label="Mi perfil"
+              >
+                <Avatar
+                  src={profile.avatar_url}
+                  name={profile.display_name || profile.username}
+                  size="sm"
+                  className="ring-1 ring-xline hover:ring-x-secondary transition"
+                />
+              </Link>
+            )}
+            <button
+              type="button"
+              onClick={() => logout()}
+              className="rounded-full border border-xline px-4 py-1.5 text-[13px] font-bold text-x-text transition hover:bg-x-hover"
+            >
+              Cerrar sesión
+            </button>
+          </div>
         </div>
       </header>
 
@@ -112,10 +130,17 @@ export default function FeedPage() {
             ¿Qué está pasando?
           </label>
           <div className="flex gap-3">
-            <div
-              className="h-10 w-10 shrink-0 rounded-full bg-x-secondary/40"
-              aria-hidden
-            />
+            {profile?.username ? (
+              <Link to={`/profile/${profile.username}`} aria-label="Mi perfil">
+                <Avatar
+                  src={profile.avatar_url}
+                  name={profile.display_name || profile.username}
+                  size="md"
+                />
+              </Link>
+            ) : (
+              <div className="h-10 w-10 shrink-0 rounded-full bg-x-secondary/40" aria-hidden />
+            )}
             <div className="min-w-0 flex-1 pt-1">
               <textarea
                 id="tweet-content"
@@ -158,22 +183,34 @@ export default function FeedPage() {
         ) : (
           <ul>
             {tweets.map((tweet) => {
-              const { name, handle } = displayAuthor(tweet)
+              const { name, handle, username, avatarUrl } = getAuthorInfo(tweet)
               return (
                 <li
                   key={tweet.id}
                   className="cursor-default border-b border-xline px-4 py-3 transition hover:bg-x-hover"
                 >
                   <div className="flex gap-3">
-                    <div
-                      className="h-10 w-10 shrink-0 rounded-full bg-x-secondary/50"
-                      aria-hidden
-                    />
+                    {username ? (
+                      <Link to={`/profile/${username}`} aria-label={`Perfil de ${name}`}>
+                        <Avatar src={avatarUrl} name={name} size="md" />
+                      </Link>
+                    ) : (
+                      <Avatar src={avatarUrl} name={name} size="md" />
+                    )}
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
-                        <span className="truncate text-[15px] font-bold text-x-text">
-                          {name}
-                        </span>
+                        {username ? (
+                          <Link
+                            to={`/profile/${username}`}
+                            className="truncate text-[15px] font-bold text-x-text hover:underline"
+                          >
+                            {name}
+                          </Link>
+                        ) : (
+                          <span className="truncate text-[15px] font-bold text-x-text">
+                            {name}
+                          </span>
+                        )}
                         <span className="text-[15px] text-x-secondary">
                           {handle}
                         </span>
@@ -185,10 +222,7 @@ export default function FeedPage() {
                           {tweet.created_at
                             ? new Date(tweet.created_at).toLocaleDateString(
                                 undefined,
-                                {
-                                  month: 'short',
-                                  day: 'numeric',
-                                }
+                                { month: 'short', day: 'numeric' }
                               )
                             : ''}
                         </time>

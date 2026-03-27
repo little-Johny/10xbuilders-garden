@@ -10,24 +10,46 @@ const AuthContext = createContext(null)
 
 const STORAGE_KEY = 'tc_session'
 
+async function fetchProfile(username, accessToken) {
+  const res = await fetch(`/api/profiles/${username}`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  })
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) return null
+  return data.profile ?? null
+}
+
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(null)
+  const [profile, setProfile] = useState(null)
   const [ready, setReady] = useState(false)
 
   useEffect(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY)
-      if (raw) setSession(JSON.parse(raw))
+      if (raw) {
+        const parsed = JSON.parse(raw)
+        setSession(parsed)
+        // Usar el perfil cacheado inmediatamente; se actualiza al editar
+        if (parsed?.profile) setProfile(parsed.profile)
+      }
     } catch {
       localStorage.removeItem(STORAGE_KEY)
     }
     setReady(true)
   }, [])
 
-  const persist = useCallback((next) => {
-    setSession(next)
-    if (next) localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
-    else localStorage.removeItem(STORAGE_KEY)
+  const persist = useCallback((nextSession, nextProfile) => {
+    setSession(nextSession)
+    setProfile(nextProfile ?? null)
+    if (nextSession) {
+      const bundle = nextProfile
+        ? { ...nextSession, profile: nextProfile }
+        : nextSession
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(bundle))
+    } else {
+      localStorage.removeItem(STORAGE_KEY)
+    }
   }, [])
 
   const login = useCallback(
@@ -47,7 +69,15 @@ export function AuthProvider({ children }) {
         expires_at: data.session.expires_at,
         user: data.user,
       }
-      persist(bundle)
+      // Cargar perfil por email (necesitamos saber el username)
+      // Lo obtenemos vía GET /profiles buscando por user id no está expuesto directamente,
+      // así que usamos el endpoint con token para obtener el propio perfil
+      const profileRes = await fetch('/api/profiles/me', {
+        headers: { Authorization: `Bearer ${data.session.access_token}` },
+      })
+      const profileData = await profileRes.json().catch(() => ({}))
+      const p = profileRes.ok ? profileData.profile : null
+      persist(bundle, p)
     },
     [persist]
   )
@@ -74,18 +104,29 @@ export function AuthProvider({ children }) {
         expires_at: data.session.expires_at,
         user: data.user,
       }
-      persist(bundle)
+      const p = await fetchProfile(username.trim().toLowerCase(), data.session.access_token)
+      persist(bundle, p)
     },
     [persist]
   )
 
   const logout = useCallback(() => {
-    persist(null)
+    persist(null, null)
   }, [persist])
+
+  const updateProfile = useCallback((nextProfile) => {
+    setProfile(nextProfile)
+    setSession((prev) => {
+      if (!prev) return prev
+      const updated = { ...prev, profile: nextProfile }
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
+      return updated
+    })
+  }, [])
 
   return (
     <AuthContext.Provider
-      value={{ session, ready, login, register, logout }}
+      value={{ session, profile, ready, login, register, logout, updateProfile }}
     >
       {children}
     </AuthContext.Provider>
