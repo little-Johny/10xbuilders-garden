@@ -9,54 +9,54 @@ status: draft
 
 # CLI como Alternativa a MCP
 
-> Los CLIs llevan 50 anos resolviendo problemas de forma simple, composable y barata. MCP agrega estructura y seguridad, pero a un costo medible en tokens, latencia y confiabilidad. Saber cuando usar cada uno es clave para un flujo de desarrollo eficiente.
+> **Síntesis.** Las **CLI** llevan décadas resolviendo tareas de forma **simple, componible y barata** en tokens. **MCP** aporta estructura, descubrimiento de herramientas y gobernanza, pero tiene **coste** medible en contexto y latencia. Elegir entre una y otra —o combinarlas con un skill que oculte la complejidad— es decisión de **ingeniería**, no de moda.
 
-## Objetivos de Aprendizaje
+## Introducción
 
-- Evaluar con datos concretos (tokens, costo, tasa de exito) cuando conviene CLI vs MCP para una tarea dada.
-- Aplicar composicion Unix para resolver problemas complejos encadenando comandos simples, algo que MCP no puede replicar sin multiples llamadas.
-- Disenar skills que orquesten CLIs como backend eficiente, usando Progressive Disclosure para simplificar la experiencia del usuario.
-- Identificar los escenarios donde MCP sigue siendo la opcion correcta (seguridad, auditoria, datos sensibles).
+Los estudios comparativos (por ejemplo mediciones de consumo de tokens en flujos equivalentes) muestran que invocar herramientas MCP puede costar **varios órdenes de magnitud** más contexto que una cadena de comandos clásica para el mismo resultado observable. Eso no vuelve obsoleto a MCP: en entornos con **auditoría**, **secretos** o **políticas de acceso**, el servidor intermediario sigue siendo la opción correcta. La lección contrasta **CLI + composición Unix** con **MCP**, introduce **progressive disclosure** vía skills y enlaza con el **clon de X** y Supabase local donde aplica.
 
-## Conceptos Clave
+## Objetivos de aprendizaje
 
-- **Overhead de tokens en MCP:** El estudio de Scalekit muestra que MCP consume entre 4x y 34x mas tokens que CLI para la misma tarea. La razon: esquemas JSON exhaustivos con descripciones, ejemplos y metadata en cada llamada. Un `curl | jq` resuelve en ~1,300 tokens lo que MCP necesita ~44,800 para obtener el lenguaje de un repo en GitHub.
+1. **Comparar** con criterios concretos (tokens, coste monetario aproximado, tasa de éxito, latencia) cuándo favorece la CLI frente a MCP para una tarea dada.
+2. Aplicar **composición Unix** —pipes y programas pequeños— para resolver tareas que con MCP exigirían muchas invocaciones sueltas.
+3. Diseñar **skills** que usen CLI como backend eficiente y devuelvan al usuario o al agente solo lo **relevante**.
+4. Identificar escenarios donde **MCP** sigue siendo preferible: seguridad, datos sensibles, auditoría de ejecución.
 
-- **Confiabilidad operacional:** CLI tiene 100% de exito en local porque no depende de red, servidores remotos ni validacion de esquemas. MCP reporta un 28% de fallo segun el estudio, por timeouts, parametros incorrectos o cambios en esquemas remotos.
+## Marco conceptual
 
-- **Composicion Unix:** El principio de "programas pequenos que hacen una cosa bien y se encadenan via pipes" sigue siendo poderoso. `find . -mtime 0 | head -5 | awk '{print $9}'` es un pipeline de 1 linea. El equivalente MCP requeriria 3 herramientas separadas con 3 llamadas independientes.
+### Overhead de contexto en MCP
 
-- **Progressive Disclosure con CLI + Skill:** El patron ganador combina lo mejor de ambos mundos. El usuario da un comando simple, el skill ejecuta CLIs baratos por detras, aplica logica condicional segun el output, y devuelve solo lo relevante. ~250 tokens en lugar de ~2,000 con MCP.
+Cada herramienta MCP expone **esquemas** y descripciones al modelo. En conjunto, decenas de herramientas pueden consumir miles de tokens solo en metadatos. Una cadena equivalente con `curl`, `jq` o utilidades locales puede producir la misma **información útil** con mucho menos texto de protocolo alrededor. Por eso los informes de la industria suelen mostrar ratios altos de tokens MCP versus CLI para tareas comparables.
 
-- **Cuando MCP es la opcion correcta:** Seguridad corporativa (permisos granulares, auditoria de quien ejecuto que), APIs con datos sensibles (financieros, medicos) donde las credenciales deben quedarse en el servidor, y control de acceso donde Claude no debe ver el secret sino solo el resultado.
+### Confiabilidad operativa local
 
-- **Costo financiero real:** Una operacion tipica cuesta ~$3 via CLI vs ~$55 via MCP, directamente proporcional al consumo de tokens. En desarrollo diario con ciclos rapidos de iteracion, esto escala significativamente.
+Una CLI en la máquina del desarrollador **no** depende de un servidor remoto ni de la disponibilidad de un host MCP; los fallos típicos son distintos (permisos, binario ausente). Los flujos MCP añaden puntos de fallo (red, esquema cambiado, timeout). La elección no es «siempre CLI»: es **emparejar** riesgo y dependencias con el tipo de tarea.
 
-- **CLI como interfaz natural para LLMs:** Los modelos conocen terminales a fondo porque su training data esta lleno de ejemplos. stdout es texto plano, parseable, predecible. No necesitan interpretar esquemas complejos para entender la salida de `git log --oneline`.
+### Composición Unix
 
-## Aplicacion al Proyecto: Clon de X
+El principio de programas pequeños conectados por **pipes** sigue siendo difícil de igualar con una lista plana de herramientas remotas: una tubería puede filtrar, contar y proyectar en un solo proceso humano o en un script. Replicar eso con MCP suele implicar **varias** llamadas independientes y más contexto acumulado.
 
-La leccion anterior (2.5) mostro como conectar Supabase via MCP. Esta leccion complementa con la perspectiva practica: en desarrollo diario, los CLIs son la herramienta principal.
+### Progressive disclosure con CLI dentro de un skill
 
-| Tarea | Herramienta | Por que |
-|---|---|---|
-| Crear migracion local | `npx supabase migration new` (CLI) | Rapido, sin overhead, 100% confiable |
-| Inspeccionar schema local | `psql -h localhost -p 54322 -U postgres` | Interactivo, composable con `\dt`, `\d tabla`, pipes a grep |
-| Queries ad-hoc en dev | `psql` + SQL directo | Feedback instantaneo, sin latencia de red |
-| Gestionar PRs del proyecto | `gh pr create`, `gh issue list` | ~1,600 tokens vs ~32,000 con MCP para detalles de PR |
-| Aplicar migracion en produccion | MCP + auditoria | Necesita registro, control de acceso, proteccion de datos reales |
-| Inspeccionar datos en produccion | MCP + rate-limit | Datos reales que requieren permisos y proteccion |
+Un patrón productivo es que el usuario o el agente dispare un **comando de alto nivel** mientras el skill ejecuta por detrás una o más CLI, ramifica según la salida y devuelve un **resumen** corto. Así se combina bajo coste de tokens con una interfaz simple para el modelo.
 
-**CLIs relevantes para el stack del proyecto:**
-- **`psql`** — cliente nativo de PostgreSQL. Conexion directa al contenedor local (`localhost:54322`). Soporta queries interactivas, metacomandos (`\dt`, `\di`, `\d+`), y salida composable via pipes.
-- **`gh`** — GitHub CLI. Gestiona repos, PRs, issues, actions y releases desde terminal. Ejemplo: `gh pr list --state open` consume una fraccion de los tokens que el MCP de GitHub.
-- **`npx supabase`** — ya integrado en el proyecto para migraciones y gestion de la instancia local.
+### Cuándo MCP sigue siendo la opción correcta
 
-## Puntos de Control
+Cuando hace falta **gobernanza** —quién ejecutó qué, con qué credencial—, cuando los **secretos** no deben llegar al contexto del modelo pero sí el **resultado** agregado, o cuando la política corporativa exige un único punto de acceso auditado, MCP (u otra capa de servicio) suele justificar su sobrecosto.
 
-- Si necesitas verificar rapidamente el schema de una tabla en desarrollo local, que usarias: MCP o `psql`? Por que?
-- Que hace que la composicion Unix sea imposible de replicar eficientemente con MCP?
-- En que escenario concreto del proyecto elegirias MCP sobre CLI, y que ganarias a cambio del costo extra en tokens?
+### Aplicación al proyecto (clon de X)
+
+En **desarrollo local**, crear migraciones con la CLI de Supabase, inspeccionar el esquema con `psql` o listar PRs con `gh` suele ser más **rápido y barato** en tokens que encadenar solo MCP genéricos. Para **producción** —datos reales, permisos, trazabilidad— puede ser obligatorio un camino con más control y registro, donde MCP o procesos similares encajan mejor.
+
+## Síntesis
+
+CLI y MCP responden a **distintas restricciones**: la primera maximiza control local, composición y economía de contexto; la segunda maximiza **estructura**, integración uniforme y políticas centralizadas. Los skills permiten presentar al agente una cara simple sin ocultar la elección técnica entre ambos mundos.
+
+## Preguntas de repaso
+
+1. Si necesitás verificar **rápidamente** el esquema de una tabla en desarrollo local, ¿inclinás por MCP o por `psql`, y por qué?
+2. ¿Qué hace que la **composición Unix** sea difícil de replicar de forma tan eficiente solo con muchas llamadas MCP sueltas?
+3. ¿En qué escenario concreto de tu proyecto elegirías MCP sobre CLI, y qué ganarías a cambio del coste extra en tokens o latencia?
 
 ## Notas Personales
 

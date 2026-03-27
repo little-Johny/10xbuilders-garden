@@ -7,26 +7,46 @@ date: 2026-03-17
 status: done
 ---
 
-# El Síndrome del "Copiloto Pasivo"
+# El Síndrome del "Copiloto Pasivo" 
 
-> Usar IA solo para autocompletar código es subutilizarla. El cambio real ocurre cuando se dirige como recurso de ingeniería con contexto, restricciones y criterios claros.
+> **Síntesis.** Usar la IA solo como autocompletado de código es subutilizarla. El cambio sustancial aparece cuando se la dirige como **recurso de ingeniería**, con contexto, restricciones y criterios explícitos; entonces el rol humano se desplaza hacia arquitectura, límites y validación.
 
-## Objetivos de Aprendizaje
+## Introducción
 
-- Identificar si se usa la IA como un "autocompletado glorificado".
-- Entender quién define la arquitectura y las restricciones.
+Muchos equipos adoptan asistentes de código como una extensión del editor: completar líneas, generar *boilerplate* o expresiones regulares. Ese uso es legítimo, pero deja fuera la parte donde la IA aporta más leverage: ejecutar tareas completas bajo reglas que vos definís. La lección contrapone ese hábito —el **copiloto pasivo**— con un modo de trabajo donde el desarrollador conserva la responsabilidad de arquitectura y de criterio de aceptación.
 
-## Conceptos Clave
+## Objetivos de aprendizaje
 
-- **Copiloto Pasivo:** usar IA solo para completar líneas, generar boilerplate o regex simples. Es tener un Ferrari para ir al super de la esquina.
-- **Enciclopedia vs. Recurso de Ingeniería:** no preguntar "¿cómo hago X?" sino instruir "haz X bajo estas restricciones" con contexto completo y criterios de aceptación.
-- **Nuevo flujo:** el dev define arquitectura y restricciones → la IA genera la implementación → el humano revisa, valida y audita.
-- **Nuevo rol:** la IA no reemplaza al dev, lo eleva de *code writer* a **arquitecto / tech lead** que optimiza dirección técnica, diseño de sistema y definición de requerimientos.
+1. Reconocer si la IA se está usando principalmente como **autocompletado ampliado** en lugar de como ejecutor gobernado por brief y restricciones.
+2. Explicar quién debe fijar **arquitectura** y **límites** cuando se delega implementación a un modelo.
 
-## Puntos de Control
+## Marco conceptual
 
-- *¿La última vez que usaste IA fue para rellenar líneas o para delegar una tarea completa con contexto?*
+### Copiloto pasivo frente a recurso de ingeniería
+
+**Copiloto pasivo** designa el patrón en el que la IA se limita a completar fragmentos, repetir patrones triviales o contestar preguntas puntuales sin un encargo integral. Es eficiente para microtareas, pero no explota la capacidad de sintetizar módulos, coordinar archivos ni respetar un contrato de sistema. En contraste, tratar la IA como **recurso de ingeniería** implica formular pedidos del tipo «implementá X bajo estas restricciones y este criterio de terminado», entregando el contexto que un compañero humano necesitaría para no inventar supuestos.
+
+### Enciclopedia versus dirección operativa
+
+La diferencia no es solo de tono: preguntar «¿cómo hago X?» invita a una respuesta genérica y descontextualizada. Instruir con **contexto completo** (qué sistema, qué no se puede asumir, qué cuenta como hecho) acota el espacio de soluciones y alinea el resultado con el diseño real. La metáfora «enciclopedia versus recurso de ingeniería» resume que el modelo puede aportar conocimiento amplio, pero el valor en producto aparece cuando ese conocimiento se aplica bajo reglas que vos fijás.
+
+### Nuevo flujo y nuevo rol
+
+En el flujo descrito en clase, el desarrollador define **arquitectura** y **restricciones**; la IA produce implementación; el humano **revisa, valida y audita**. El rol humano deja de ser sobre todo *escritor de código* y gana peso como **arquitecto o tech lead**: optimiza dirección técnica, diseño de sistema y definición de requisitos. La IA no sustituye ese rol; lo hace más visible al automatizar la parte mecánica.
+
+## Síntesis
+
+El riesgo no es «usar mal el prompt», sino **no asignar responsabilidades claras**: sin arquitectura y sin criterios de cierre, la IA sigue siendo una herramienta de relleno. Con un encargo bien acotado, el mismo modelo se vuelve pieza de un flujo de ingeniería gobernado.
+
+## Preguntas de repaso
+
+1. En tu última sesión con IA, ¿el pedido fue sobre todo completar líneas o delegar una tarea cerrada con contexto y criterios de éxito?
+2. ¿Qué decisión de arquitectura o de límites tendrías que haber fijado antes para que la salida del modelo fuera evaluable sin reescribirla entera?
 
 ## Notas Personales
 
-<!-- Espacio libre para observaciones propias, conexiones con otros temas, o ideas que surgieron durante el estudio. -->
+**Clase 1 — X-lab (síndrome copiloto pasivo).** En la clase se nombró el patrón del «copiloto»: usar la IA como apoyo superficial en lugar de asumir el rol de quien dirige el trabajo.
+
+**Resumen que tomé:** integrar IA no es solo autocompletar; así no se saca el máximo de la herramienta. **Tratarla como un buscador** está mal y no es su valor real. Lo que sí tiene sentido es pensarla como **reuso de ingeniería**: encargos del tipo «hacé **X** bajo estas condiciones…», donde uno define arquitectura, reglas y lógica, y **audita** resultados —en contraste con limitarse a escribir código con sugerencias de la IA o solo hacer preguntas puntuales.
+
+<!-- Más observaciones propias, conexiones con otros temas, ideas. -->

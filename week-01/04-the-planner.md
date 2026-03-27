@@ -9,28 +9,45 @@ status: draft
 
 # Planificación y Negociación (The Planner)
 
-> Antes de que la IA escriba una línea, conviene tener un plan auditable en lenguaje natural: corregir la estrategia ahí cuesta segundos; arreglar código mal encaminado puede costar horas.
+> **Síntesis.** Antes de que la IA escriba código, conviene contar con un **plan auditable** en lenguaje natural: corregir la estrategia ahí cuesta poco; reparar código mal encaminado puede costar órdenes de magnitud más.
 
-## Objetivos de Aprendizaje
+## Introducción
 
-- Pedir y obtener **solo un plan** (pasos, archivos a crear/modificar y lógica en prosa) a partir de un Technical Brief, sin deslizarse a implementación prematura.
-- Revisar un plan como **auditor de arquitectura**: rutas y nombres, dependencias e imports, orden lógico (tipos/interfaces → implementación → integración/tests) y respeto a las restricciones del brief.
-- **Negociar** ajustes en el plan con instrucciones explícitas (p. ej. qué archivo no tocar y qué alternativa usar) y dejar constancia del plan aprobado antes de implementar.
+La fase de planificación es el lugar **barato** para detectar rutas imposibles, imports inexistentes o violaciones de restricciones del brief. Si se salta y el modelo entra directo en implementación, aparecen módulos innecesarios, capas mezcladas y deuda evitable. La lección describe cómo pedir **solo un plan**, revisarlo como auditor de arquitectura y **negociar** ajustes antes de codificar.
 
-## Conceptos Clave
+## Objetivos de aprendizaje
 
-- **Implementación prematura:** si la IA arranca en código suele inventar módulos, imports rotos, mezclar capas sin orden o ignorar límites del proyecto. Un plan previo permite leer la lógica y fallas estructurales en poco tiempo.
-- **Prompt de planificación:** anclar el **brief** y exigir un plan paso a paso **sin código**: qué archivos se crean, cuáles se modifican y por qué, con la lógica de cada parte en lenguaje natural. Si aparece código, cortar con “solo el plan, sin código”.
-- **Checklist de revisión humana:** (1) **archivos y rutas** — ¿encajan con la convención del repo? (2) **dependencias e imports** — ¿existen y estaban alineadas al brief? (3) **orden lógico** — primero contratos/tipos, luego núcleo, después cableado y pruebas; (4) **constraints** — ¿se proponen cambios en zonas prohibidas o sensibles?
-- **Negociación en la fase Plan:** el lugar barato para corregir es el plan. Ejemplo mental: en lugar de tocar `cart.py`, pedir un adaptador nuevo que integre el servicio; la IA actualiza el plan y se evita refactor y debugging evitable.
-- **Flujo repetible:** brief → pedir únicamente el plan → revisar → iterar/negociar hasta alinear → **guardar el plan final** en un archivo (p. ej. `plan-implementacion-*.md`) como contrato para la implementación siguiente.
-- **Rol del humano como Planner:** no es “escribir el plan a mano”, sino **evaluar, corregir y aprobar** la propuesta de la IA. La IA optimiza y a veces inventa; detectar eso en prosa es mucho más rápido que en diff.
+1. Pedir y obtener **únicamente un plan** —pasos, archivos a crear o modificar y lógica en prosa— a partir de un Technical Brief, sin deslizarse a implementación prematura.
+2. Revisar un plan como **auditor de arquitectura**: rutas y nombres, dependencias e imports, orden lógico (contratos antes que implementación, integración y tests al final) y respeto a las restricciones del brief.
+3. **Negociar** cambios con instrucciones explícitas (qué archivo no tocar, qué alternativa usar) y dejar **constancia del plan aprobado** antes de implementar.
 
-## Puntos de Control
+## Marco conceptual
 
-- *¿La última vez que pediste código a la IA, habías leído y aprobado un plan con archivos y orden explícitos?*
-- *Mirando un plan hipotético: ¿qué dependencia o ruta revisarías primero para detectar alucinaciones?*
-- *¿Hay algún archivo o capa en tu proyecto que deberías declarar como “no tocar” en el brief o negociar así en el plan antes de implementar?*
+### Implementación prematura
+
+Si la IA arranca en código, suele inventar módulos, romper imports o ignorar límites del proyecto. Un plan previo permite leer la lógica y fallas **estructurales** en minutos, no en diffs enormes.
+
+### Cómo pedir el plan
+
+El **prompt de planificación** debe anclar el brief y exigir un plan paso a paso **sin código**: qué archivos se crean, cuáles se modifican y por qué, con la lógica de cada parte en prosa. Si aparece código, conviene cortar con una instrucción del tipo «solo el plan, sin código».
+
+### Checklist humana sobre el plan
+
+Al revisar, conviene mirar en primer lugar **archivos y rutas** frente a las convenciones del repositorio; luego **dependencias e imports** —¿existen y eran compatibles con el brief?—; después el **orden lógico** —primero contratos y tipos, luego núcleo, después cableado y pruebas—; por último las **restricciones** —¿se proponen cambios en zonas prohibidas o sensibles?—.
+
+### Negociación y registro
+
+La negociación en fase Plan es el lugar idóneo para corregir: por ejemplo pedir un adaptador nuevo en lugar de tocar un módulo delicado. Cuando el plan está alineado, conviene **guardarlo** en un archivo (por ejemplo `plan-implementacion-*.md`) como contrato para la implementación siguiente. El rol humano no es escribir todo el plan a mano, sino **evaluar, corregir y aprobar** la propuesta del modelo: detectar alucinaciones en prosa sigue siendo mucho más rápido que en código.
+
+## Síntesis
+
+**The Planner** no es una herramienta aparte: es la **disciplina** de no aceptar código hasta tener un plan revisado, negociado y documentado que el brief habría aprobado en términos de alcance y límites.
+
+## Preguntas de repaso
+
+1. ¿La última vez que pediste código a la IA, habías leído y aprobado un plan con archivos y orden explícitos?
+2. Mirando un plan hipotético, ¿qué dependencia o ruta revisarías primero para detectar alucinaciones?
+3. ¿Hay algún archivo o capa en tu proyecto que deberías declarar como «no tocar» en el brief o negociar así en el plan antes de implementar?
 
 ## Notas Personales
 

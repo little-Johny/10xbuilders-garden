@@ -9,140 +9,56 @@ status: in-progress
 
 # Los 4 Componentes: Reglas, Skills, MCPs, SubAgents
 
-> Pasar de "promptear" reactivamente a diseñar sistemas autónomos sostenibles, comprendiendo los 4 componentes fundamentales: Reglas, Skills, MCPs y SubAgents.
+> **Síntesis.** Pasar de **promptear** en modo reactivo a **diseñar sistemas** sostenibles exige nombrar cuatro piezas que se combinan en el flujo: **Reglas**, **Skills**, **MCP** (Model Context Protocol) y **SubAgents**. Cada una responde a una necesidad distinta; mezclarlas o ignorarlas reproduce microgestión y contexto inflado.
 
-## Objetivos de Aprendizaje
+## Introducción
 
-- Comprender la metáfora del Director Técnico: de microgestionar cada acción a observar y mejorar el sistema
-- Diferenciar los 4 componentes arquitectónicos: qué es cada uno, cuándo usarlo y por qué importa
-- Entender las dinámicas de trabajo: cómo se cargan y operan en el contexto del agente
-- Aplicar principios de decisión: cuándo crear una Regla, un Skill, un MCP o un SubAgent
-- Identificar casos de uso reales para cada componente en tu workflow
+La metáfora del **director técnico** implica dejar de controlar cada acción del modelo y empezar a **mejorar el sistema** que rodea al agente: qué se inyecta siempre, qué procedimientos están documentados, cómo se accede a datos externos y qué tareas se delegan en segundo plano. La lección presenta una **cancha** unificada: el código donde opera el agente, vos como quien fija el sistema, las acciones posibles (leer, escribir, ejecutar) y los cuatro tipos de «jugadores» o capacidades.
 
-## Conceptos Clave
+## Objetivos de aprendizaje
 
-- **La cancha (sistema completo):** código fuente donde opera el agente, el DT (vos) que diseña el sistema, la pelota (acciones: leer, escribir, editar, ejecutar) y los jugadores (el agente y sus capacidades).
-- **Reglas = Principios de juego:** se cargan SIEMPRE en cada prompt. Se almacenan en `claude.md` o `.cursor/rules`. Ideales para seguridad, estilo de código, principios de diseño. No se negocian.
-- **Skills = Jugadas preparadas:** procedimientos reutilizables que le enseñan al agente cómo hacer algo específico. Usan Progressive Disclosure: el agente solo ve nombre + descripción, los detalles se cargan al ejecutar.
-- **MCPs = Ojeadores/Data externa:** conexiones a sistemas externos (DBs, APIs, servicios). Full disclosure: el agente ve todas las herramientas disponibles y las llama directamente. No contaminan el contexto principal.
-- **SubAgents = Jugadores especiales:** agentes delegados que corren en paralelo o segundo plano para tareas específicas. Tienen su propio scope, no desvían el flujo principal.
+1. Entender la metáfora del director técnico: de microgestionar cada acción a **observar y mejorar el sistema**.
+2. Diferenciar los **cuatro componentes**: qué es cada uno, cuándo usarlo y por qué importa en el largo plazo.
+3. Describir cómo se **cargan y operan** en el contexto del agente (reglas persistentes, skills con despliegue progresivo, MCP con catálogo de herramientas, subagents con ámbito propio).
+4. Aplicar **criterios de decisión** para elegir entre regla, skill, MCP o subagent en un flujo real.
+5. Identificar **casos de uso** concretos de cada componente en el propio trabajo.
 
-## Dinámica Tradicional vs. Esperada
+## Marco conceptual
 
-| Aspecto | Tradicional | Esperada |
-|---|---|---|
-| Enfoque | "Qué hacer paso a paso" | "Mejorar el sistema" |
-| Control | Microgestión de cada acción | Observar y ajustar |
-| Carga mental | Alta (repetís instrucciones) | Baja (sistema autosustentable) |
-| Escalabilidad | No escala | Escala automáticamente |
+### Reglas: principios que siempre aplican
 
-## Deep Dive: Los 4 Componentes
+Las **reglas** son principios de juego que se cargan **en cada** interacción relevante. Suele almacenarse en archivos como `claude.md` o `.cursor/rules`. Son el lugar adecuado para seguridad, estilo de código y principios de diseño que **no** querés renegociar en cada chat. Si una norma vale para todo el proyecto y se repite en cada sesión, es candidata a regla, no a recordatorio manual.
 
-### 1. Reglas: El Código de Juego
+### Skills: jugadas ensayadas y progressive disclosure
 
-Principios que rigen SIEMPRE tu trabajo con el agente. Se cargan automáticamente en cada sesión.
+Los **skills** son procedimientos reutilizables que enseñan al agente **cómo** hacer algo específico. Su rasgo típico es el **progressive disclosure**: al principio el modelo ve solo nombre y descripción breve; si el skill es relevante, carga el detalle completo. Eso ahorra tokens y reduce ruido frente a pegar un manual entero en cada mensaje. Conviene un skill cuando el procedimiento se repite, tiene pasos claros y un nombre que el agente pueda descubrir en el índice.
 
-**Almacenamiento:** `claude.md` (raíz del proyecto) o `.cursor/rules` (Cursor IDE)
+### MCP: conexión estructurada al mundo exterior
 
-**Ejemplo:**
-```markdown
-# Principios de seguridad
-- Nunca ejecutar rm -rf sin confirmación explícita
-- Siempre reviewar scripts bash antes de ejecutar
-- Verificar permisos de archivo antes de editar
-```
+**MCP** (Model Context Protocol) estandariza cómo el cliente (editor o agente) descubre e invoca **herramientas** expuestas por un **servidor** que habla con sistemas externos: bases de datos, APIs, servicios internos. En este modelo suele predominar la **disclosure completa del catálogo** de herramientas disponibles para ese servidor: el agente ve todas y elige cuál invocar. Es la pieza adecuada cuando los datos viven fuera del repo y cambian con frecuencia.
 
-**Cuándo usarlas:**
-- Tienés un principio que se repite en CADA interacción
-- Es un criterio de seguridad o estilo
-- Aplica a TODO el proyecto
+### SubAgents: especialistas con contexto propio
 
-### 2. Skills: Las Jugadas Ensayadas
+Los **subagents** son agentes delegados para tareas concretas —a menudo en paralelo o en segundo plano— que **no** deberían secuestrar el hilo principal. Ejemplos típicos: revisión de seguridad, ejecución de tests, o generación de documentación paralela. Mantienen su propio scope y devuelven un resumen al flujo principal.
 
-Procedimientos reutilizables. Le enseñás al agente cómo hacer algo específico, como un manual de instrucciones guardado.
+### Dinámica esperada frente a la tradicional
 
-**Característica clave — Progressive Disclosure:**
-- Al agente solo se le muestra nombre + descripción (ahorra tokens)
-- Cuando se ejecuta, tiene acceso a los detalles completos
+En un enfoque tradicional, el foco está en «qué hacer paso a paso» y el control en microgestión; la carga mental se dispara porque repetís instrucciones. En el enfoque esperado, el foco pasa a **mejorar el sistema** que el agente usa: el control es observar y ajustar reglas, skills, MCP y subagents; la carga baja y la escalabilidad mejora porque el sistema **se reutiliza**.
 
-**Ejemplo de estructura:**
-```
-Nombre: "Generar Reporte Excel"
-Descripción: "Crea un reporte formateado en Excel con datos y gráficos"
+### Criterios de elección rápida
 
-Detalles (ocultos inicialmente):
-- Paso 1: Obtener datos de la fuente
-- Paso 2: Transformar y validar
-- Paso 3: Aplicar formato
-- Paso 4: Insertar gráficos
-- Paso 5: Guardar archivo
-```
+Si necesitás que un principio se aplique **siempre** sin debate, suele ser **regla**. Si un procedimiento con pasos definidos se repite más de unas pocas veces y merece nombre propio, suele ser **skill**. Si necesitás **datos o acciones** en sistemas externos con contrato estable, suele ser **MCP**. Si la tarea es secundaria pero importante, repetible y conviene **aislar contexto** (tests, review), suele ser **subagent**.
 
-**Cuándo crearlos:**
-- Usás el mismo procedimiento >3 veces
-- Tiene >5 pasos bien definidos
-- Tiene un nombre memorable y claro
-- Lo usarás en distintos contextos
+## Síntesis
 
-### 3. MCPs: Las Conexiones Externas
+Los cuatro componentes no compiten: se **combinan**. Las reglas fijan el terreno; los skills enseñan recetas; el MCP conecta con fuentes vivas; los subagents delegan trabajo pesado sin inflar el chat principal. Diseñar el sistema es elegir **dónde va cada responsabilidad**.
 
-Model Context Protocol — puertas de conexión a sistemas externos. Permiten que el agente acceda a información sin contaminar tu contexto principal.
+## Preguntas de repaso
 
-**Característica clave — Full Disclosure:** el agente ve TODAS las herramientas disponibles del MCP.
-
-**Flujo típico:**
-```
-Vos: "Dame los clientes de la última semana"
-  ↓
-MCP (base de datos) lista herramientas: [get_clients, filter_by_date, export_csv]
-  ↓
-Agente: Elige get_clients + filter_by_date
-  ↓
-Respuesta: "Encontré 47 clientes nuevos"
-```
-
-**Cuándo crearlos:**
-- Necesitás datos de una fuente externa (DB, API)
-- Actualmente pedís datos "a mano" y los copiás
-- La información es dinámica (cambia frecuentemente)
-- Querés que el agente acceda directamente sin tu intervención
-
-### 4. SubAgents: Los Especialistas
-
-Agentes delegados que corren en paralelo o segundo plano para tareas específicas sin desviarte del flujo principal.
-
-**Flujo típico:**
-```
-Tarea principal: Desarrollar nueva feature
-  ↓
-SubAgent (en paralelo): Revisar código de seguridad
-SubAgent (en paralelo): Validar pruebas unitarias
-SubAgent (en paralelo): Revisar documentación
-  ↓
-Reportes llegan cuando terminás la feature
-```
-
-**Cuándo crearlos:**
-- Tenés validaciones/checks que se repiten pero desvían el flujo
-- Necesitás ejecutar tareas en paralelo
-- La tarea es "secundaria" pero importante (testing, review)
-- Querés especialización sin aumentar contexto
-
-## Matriz de Decisión Rápida
-
-| Necesidad | Componente | Razón |
-|---|---|---|
-| Seguridad, principios recurrentes | **Regla** | Se aplica siempre, automáticamente |
-| Procedimiento >3 veces, bien definido | **Skill** | Reduce complejidad, reutilizable |
-| Datos externos, APIs, DBs | **MCP** | Acceso sin contaminar contexto |
-| Validación/review paralelo, especializado | **SubAgent** | Delegación sin desviar flujo |
-
-## Puntos de Control
-
-- *¿Qué instrucciones le repetís al agente en cada sesión? → Candidatas a Regla*
-- *¿Qué procedimientos hacés manualmente más de 3 veces? → Candidatos a Skill*
-- *¿Qué datos copiás a mano de fuentes externas? → Candidatos a MCP*
-- *¿Qué tareas secundarias te desvían del flujo principal? → Candidatas a SubAgent*
+1. ¿Qué instrucciones le repetís al agente en cada sesión? ¿Cuáles podrían ser **reglas**?
+2. ¿Qué procedimiento hacés manualmente más de tres veces con variaciones mínimas? ¿Encajaría como **skill**?
+3. ¿Qué datos copiás a mano desde fuentes externas? ¿Un **MCP** podría servirlos con menos fricción?
+4. ¿Qué tareas secundarias te sacan del foco principal pero siguen siendo obligatorias? ¿Son candidatas a **subagent**?
 
 ## Notas Personales
 

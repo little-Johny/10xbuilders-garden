@@ -9,26 +9,45 @@ status: draft
 
 # El Arte del "Technical Brief" (Architecting)
 
-> La calidad del código que devuelve la IA sigue a la calidad del contexto que le das: un brief bien armado acota el espacio de soluciones y evita que el modelo invente; un pedido vago produce “código de demo”, no software que aguante sistema real.
+> **Síntesis.** La calidad del código que devuelve la IA sigue a la calidad del **contexto**: un **Technical Brief** bien armado acota el espacio de soluciones y reduce alucinaciones; un pedido vago produce código de demostración, no software que deba convivir con un sistema real.
 
-## Objetivos de Aprendizaje
+## Introducción
 
-- Explicar por qué el cuello de botella suele ser el contexto (no “el modelo”) y adoptar el mantra: **contexto sólido → código más útil**.
-- Completar un Technical Brief con las cinco secciones obligatorias (título, contexto, requerimientos técnicos, restricciones, Definition of Done) para una tarea concreta.
-- Aplicar el flujo **brief → crítica por IA (sin código) → iteración del brief → recién después plan/implementación**, usando la IA como revisor de diseño antes que como generador.
+El cuello de botella rara vez es «el modelo» en abstracto: es la **ventana de contexto** y la **especificación**. La lección propone el brief como instrumento de **architecting** previo a escribir código, y un mantra práctico: **contexto sólido → código más útil**.
 
-## Conceptos Clave
+## Objetivos de aprendizaje
 
-- **De “pedir código” a “dirigir implementación”:** la formulación importa. “Hacé una función de impuestos” obliga a la IA a adivinar; describir el problema real (p. ej. lógica fiscal acoplada al carrito en un e-commerce legacy y necesidad de servicio desacoplado, stateless y extensible) alinea la solución con arquitectura y mantenimiento.
-- **Technical Brief:** documento corto que fija alcance y criterios *antes* de escribir código. Las **cinco secciones** son: (1) **título** que encaje el alcance en una frase con intención clara; (2) **contexto** (por qué existe el problema y qué parte del sistema toca, para cortar suposiciones); (3) **requerimientos técnicos** (stack, patrones, entradas/salidas, contratos, tipos — intención → especificación operativa); (4) **constraints** (qué no hacer, estándos, herramientas de test/lint, casos borde esperados — frena dependencias inventadas y atajos); (5) **Definition of Done** (criterios verificables: lint, cobertura, documentación pública, etc. — el éxito se mide con evidencia, no con “se ve que anda”).
-- **Flujo de trabajo:** elegir escenario real o sandbox → redactar el brief completo → **no pedir código aún**: entregar el brief y pedir **crítica** (qué falta, qué es ambiguo, qué restricción sumar) → incorporar feedback y reforzar el brief → solo entonces pasar a planificación o implementación. Saltarse la crítica suele dar una primera versión aparentemente linda pero frágil.
-- **Tres ideas para llevar:** (1) un prompt de una línea suele mapear a una solución mentalmente superficial; (2) invertir en claridad no es burocracia, es menos retrabajo; (3) **no es magia, es brief** — en producción gana quien especifica y revisa el brief antes de generar.
+1. Explicar por qué el límite práctico suele ser el contexto y adoptar el mantra **contexto sólido → código más útil**.
+2. Completar un Technical Brief con las cinco secciones obligatorias —título, contexto, requerimientos técnicos, restricciones, Definition of Done— para una tarea concreta.
+3. Aplicar el flujo **brief → crítica por IA (sin código) → iteración del brief → recién después plan o implementación**, usando la IA primero como revisor de diseño.
 
-## Puntos de Control
+## Marco conceptual
 
-- *¿Tu último pedido a la IA incluía contexto de sistema, límites explícitos y criterios de “listo” medibles, o solo la intención en una frase?*
-- *Si le pasás tu brief actual a la IA solo con “críticalo antes de código”, ¿qué huecos o ambigüedades anticipás que podría señalar?*
-- *Elegí una tarea pequeña real: ¿el título del brief refleja alcance arquitectónico o solo el nombre de una función?*
+### De «pedir código» a «dirigir implementación»
+
+La formulación importa. Pedir «una función de impuestos» obliga al modelo a adivinar reglas de negocio y acoplamientos. Describir el problema real —por ejemplo lógica fiscal acoplada a un carrito legacy, necesidad de un servicio desacoplado y extensible— alinea la solución con mantenimiento y arquitectura. El brief es el puente entre intención vaga y **especificación operativa**.
+
+### Las cinco secciones del Technical Brief
+
+El **Technical Brief** es un documento corto que fija alcance antes de codificar. El **título** debe encajar el alcance en una frase con intención clara. El **contexto** explica por qué existe el problema y qué parte del sistema toca, para cortar suposiciones. Los **requerimientos técnicos** concretan stack, patrones, entradas y salidas, contratos y tipos: pasan de intención a algo que se puede verificar. Las **restricciones** listan qué no hacer, estándares, herramientas de test o lint y casos borde esperados; frenan dependencias inventadas y atajos. La **Definition of Done** fija criterios verificables —lint, cobertura, documentación pública— de modo que el éxito se mida con evidencia, no con «parece que anda».
+
+### Flujo de trabajo con crítica previa
+
+El flujo recomendado es elegir un escenario real o de práctica, redactar el brief completo y **no pedir código todavía**: entregar el brief y pedir **crítica** —qué falta, qué es ambiguo, qué restricción sumar—, incorporar el feedback y solo entonces pasar a planificación o implementación. Saltarse la crítica suele dar una primera versión aparentemente aceptable pero frágil ante borde y evolución.
+
+### Ideas transversales
+
+Un prompt de una línea suele mapear a una solución mentalmente superficial. Invertir en claridad no es burocracia gratuita: es menos retrabajo. En entornos exigentes, **no es magia, es brief**: quien especifica y revisa el brief antes de generar suele ganar en consistencia.
+
+## Síntesis
+
+El brief es el **instrumento de arquitectura** más barato: obliga a explicitar supuestos antes de que existan archivos y permite usar la IA como crítico de diseño antes de usarla como generador.
+
+## Preguntas de repaso
+
+1. ¿Tu último pedido a la IA incluía contexto de sistema, límites explícitos y criterios de «listo» medibles, o solo la intención en una frase?
+2. Si le pasás tu brief actual a la IA solo con «críticalo antes de código», ¿qué huecos o ambigüedades anticipás que podría señalar?
+3. Elegí una tarea pequeña real: ¿el título del brief refleja alcance arquitectónico o solo el nombre de una función?
 
 ## Notas Personales
 

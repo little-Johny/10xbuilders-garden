@@ -9,170 +9,58 @@ status: done
 
 # Skills en Practica: TDD y Setup del Clon de Twitter
 
-> Dominar la creacion, implementacion e iteracion de Skills en un entorno real, transitando de la teoria a la practica mediante TDD (Test-Driven Development). Configurar el "Cerebro" de un proyecto (estructura, reglas, verificacion) que sirva como base para construir un Clon de Twitter con IA.
+> **Síntesis.** Dominar la creación, implementación e iteración de **skills** en un entorno real permite pasar de la teoría a la práctica mediante **TDD** (desarrollo guiado por tests) y reglas de proyecto. El **skill** actúa como contrato verificable entre humano y agente; las **reglas** fijan el «cerebro» compartido del repositorio para un clon de red social u otro proyecto largo.
 
-## Objetivos de Aprendizaje
+## Introducción
 
-- Entender que es TDD y por que es critico al trabajar con agentes IA.
-- Crear reglas de proyecto (`.cursor/rules/`) que guien el comportamiento del agente.
-- Definir un skill usando `/create skill` en Cursor.
-- Aplicar el ciclo Red -> Green -> Refactor en TDD.
-- Comprender Progressive Disclosure: carga inteligente de contexto para el agente.
-- Iterar skills: refinar un skill con nueva informacion.
-- Debugging basado en tests: crear tests que reproduzcan bugs antes de arreglarlos.
-- Setup inicial del proyecto: estructura de carpetas, stack, convenciones.
+Trabajar con agentes en un codebase serio exige **verificabilidad**: el modelo debe poder comprobar si cumplió el encargo sin depender de supervisión continua línea a línea. El **TDD** (ciclo rojo → verde → refactor) y los tests como especificación se convierten en el lenguaje común. En paralelo, las **reglas** en `.cursor/rules/` estabilizan stack, carpetas y comandos de verificación. Los **skills** encapsulan procedimientos con **progressive disclosure** para no inundar el contexto. La sesión práctica recorre setup inicial, creación de skill con `/create skill` en Cursor e iteración cuando aparecen nuevos requisitos.
 
-## Conceptos Clave
+## Objetivos de aprendizaje
 
-### 1. Test-Driven Development (TDD) con IA
+1. Explicar por qué el TDD es especialmente valioso cuando el implementador es un **agente**.
+2. Crear **reglas de proyecto** en `.cursor/rules/` que guíen comportamiento, stack y verificación.
+3. Definir un skill usando el flujo de creación en Cursor y aplicar el ciclo **Red → Green → Refactor**.
+4. Explicar **progressive disclosure** frente a cargar todo el manual en cada mensaje.
+5. **Iterar** skills al añadir rutas de tests, scripts (`npm test`, `npm run lint`) o dependencias nuevas.
+6. Usar **tests como guía de debugging**: reproducir el bug en un test antes de «arreglar a ciegas».
+7. Configurar la **estructura inicial** del proyecto: carpetas, convenios y stack acordado.
 
-TDD es fundamental cuando trabajas con agentes IA porque:
+## Marco conceptual
 
-- **Verificabilidad:** El agente puede verificar si completo la tarea sin supervision humana continua.
-- **Claridad:** Los tests definen exactamente que se espera (entrada, salida, comportamiento).
-- **Debugging eficiente:** Cuando algo falla, el test aislado te dice exactamente donde.
-- **Iteracion rapida:** Red -> Green -> Refactor mantiene el codigo limpio.
+### TDD con agentes como contrato
 
-**El ciclo TDD:**
+El TDD es central con IA porque los **tests** fijan comportamiento esperado —entradas, salidas y errores— de forma que el agente puede **autoverificar**. Cuando algo falla, el test aislado acota la causa. El ciclo clásico es: **Red**, escribir un test que falla porque la funcionalidad aún no existe; **Green**, implementar lo mínimo para pasar; **Refactor**, mejorar el código manteniendo los tests verdes. En conjunto, el test funciona como **contrato**: el humano define qué debe cumplirse; el agente propone implementaciones; la suite demuestra si se cumplen.
 
-1. **RED (Rojo):** Escribes un test que falla porque la funcionalidad no existe.
-2. **GREEN (Verde):** Implementas lo minimo para que el test pase.
-3. **REFACTOR:** Mejoras el codigo manteniendo los tests verdes.
+### Reglas de proyecto
 
-### 2. Reglas de Proyecto (`.cursor/rules/`)
+Las **reglas** son instrucciones persistentes sobre cómo debe comportarse el agente en ese repositorio. Suelen incluir **stack** (por ejemplo React, Vite, Tailwind, Supabase), **estructura de carpetas** (`app/`, `api/`, `tests/`), **principios** (TDD, lint, convenciones de nombres) y **comandos de verificación** que el agente puede ejecutar para validar su trabajo. Colocarlas antes de implementar reduce discusiones implícitas sobre «cómo se hace acá».
 
-Instrucciones persistentes que guian como el agente debe comportarse en tu proyecto.
+### Progressive disclosure frente a full disclosure
 
-**Componentes esenciales:**
+En **progressive disclosure** (típico de skills bien diseñados), el agente ve primero **nombre y descripción breve** del skill, evalúa relevancia y solo entonces carga el cuerpo completo (checklist, pasos, detalles). Eso reduce ruido y tokens. En **full disclosure** (habitual en algunos catálogos **MCP**), el modelo ve todas las herramientas disponibles de una vez y elige cuál invocar; es adecuado para integraciones externas, pero no es el mismo patrón que un skill con índice liviano.
 
-- **Stack tecnologico:** Decisiones arquitectonicas (React, Vite, Tailwind, Supabase).
-- **Estructura de carpetas:** `app/` (frontend), `api/` (backend), `tests/` (pruebas).
-- **Principios de desarrollo:** Discovery de skills, verificacion, linting, convenciones.
-- **Comandos de verificacion:** Scripts que el agente puede ejecutar para validar su trabajo.
+### Iteración de skills
 
-### 3. Progressive Disclosure vs Full Disclosure
+Un skill **no** es estático. Un primer ciclo puede definir solo **estructura** y dejar tests en rojo que marcan el trabajo pendiente. Un segundo ciclo añade **contexto operativo**: rutas de tests, scripts de verificación, dependencias. Un tercero puede **integrar** referencias a otros skills o tipos compartidos. Esa evolución es normal cuando el proyecto crece.
 
-Existen dos estrategias de carga de contexto para el agente:
+### Arquitectura típica de un skill
 
-**Progressive Disclosure (Skills):** El agente no ve todo a la vez. Solo descubre lo que necesita:
+En la práctica, un skill puede organizarse como carpetas con `SKILL.md`, tests de ejemplo, código de referencia y scripts de verificación. La forma exacta depende del repo; lo importante es que **SKILL.md** describa objetivo y pasos de forma que el agente los descubra con progressive disclosure.
 
-1. Ve nombre + descripcion breve del skill primero.
-2. Evalua si es relevante para la tarea actual.
-3. Si lo es, carga el contenido completo (checklist, objetivo, pasos detallados).
+### Referencia de tiempos de la sesión
 
-Esto reduce ruido y acelera la toma de decisiones.
+La grabación sigue aproximadamente este orden: introducción al TDD con IA (0:00–0:18); ciclo Red/Green y **autoverificación** frente a supervisión continua (0:18–1:04); configuración de **rules** en `.cursor/rules/` con stack y estructura (1:04–3:24); creación de skill con `/create skill` (3:24–4:14); demostración del ciclo TDD (4:14–5:07); setup de carpetas, tests iniciales y scripts (5:07–6:34); iteración del skill con más contexto y comandos (6:34–7:27); cierre y reto (7:27 en adelante).
 
-**Full Disclosure (MCPs):** El agente ve TODAS las herramientas disponibles de una vez. Cuando se conecta a un sistema externo via MCP, recibe el catalogo completo de operaciones y decide cual usar. No hay carga progresiva — todo esta visible desde el inicio.
+## Síntesis
 
-### 4. Iteracion de Skills
+TDD con IA no es solo «escribir tests»: es un **contrato explícito** entre humano y máquina. El test define **qué** se espera; el agente **implementa** para cumplirlo; la suite permite que la **máquina** verifique su trabajo de forma repetible. Ese trío hace que el proyecto sea más mantenible, escalable y auditable que un flujo solo de prompts.
 
-Un skill no es estatico. Evoluciona en ciclos:
+## Preguntas de repaso
 
-- **Iteracion 1 — Setup basico:** El skill define la estructura inicial. Estado RED (los tests definen que hacer).
-- **Iteracion 2 — Agregar contexto:** Actualizar con rutas de tests, scripts de verificacion (`npm test`, `npm run lint`), dependencias.
-- **Iteracion 3 — Integracion:** Agregar referencias a otros skills, tipos compartidos, endpoints dependientes.
-
-## Deep Dive Tecnico
-
-### Sistema de Skills: Arquitectura
-
-Un skill en Cursor es mas que un archivo. Es un sistema completo:
-
-```
-skill_name/
-├── SKILL.md              # Definicion + prompt
-├── tests/
-│   ├── test_basico.ts    # Tests unitarios (TDD Red)
-│   └── test_integracion.ts
-├── src/
-│   └── implementacion.ts  # Codigo que pasa tests
-└── verificacion.sh        # Script que valida todo
-```
-
-### Reglas de Proyecto: Estructura Recomendada
-
-Archivo: `.cursor/rules/forma_de_trabajo.md`
-
-```markdown
-# Forma de Trabajo - Clon de Twitter
-
-## Stack Tecnologico
-- Frontend: React 18 + Vite + TypeScript
-- Styling: Tailwind CSS
-- Backend: Supabase (PostgreSQL + Auth)
-- Testing: Vitest + React Testing Library
-
-## Estructura de Carpetas
-app/
-  ├── pages/          # Paginas principales
-  ├── components/     # Componentes reutilizables
-  ├── hooks/          # Custom hooks
-  ├── utils/          # Utilities
-  └── styles/         # Estilos globales
-
-api/
-  ├── routes/         # Endpoints
-  ├── middleware/     # Autenticacion, validacion
-  ├── db/             # Migrations, seeds
-  └── types.ts        # Tipos compartidos
-
-tests/
-  ├── unit/           # Tests unitarios
-  ├── integration/    # Tests de integracion
-  └── e2e/            # Tests end-to-end
-
-## Principios
-1. TDD: Tests primero, implementacion despues
-2. Verificacion: Todo codigo debe pasar tests
-3. Discovery: Agente descubre skills progresivamente
-4. Convenciones: Nombres en presente continuo para skills
-```
-
-### Progressive Disclosure en Accion
-
-**Paso 1 — El agente ve el "indice":**
-```
-Skill disponible: creating_twitter_clone
-Descripcion: Establece estructura inicial del clon de Twitter
-```
-
-**Paso 2 — El agente evalua relevancia:**
-- Es pertinente para mi tarea actual?
-- Necesito el contenido completo o solo la descripcion?
-
-**Paso 3 — Carga completa si es necesario:**
-Accede al SKILL.md con el checklist, objetivo y pasos detallados.
-
-## Timestamps de Referencia
-
-| Tiempo | Tema |
-|---|---|
-| 00:00 - 00:18 | Intro: por que TDD es critico con IA |
-| 00:18 - 00:42 | Ciclo Red -> Green, verificabilidad |
-| 00:42 - 01:04 | El agente se auto-verifica vs supervision continua |
-| 01:04 - 03:24 | Setup de Rules: `.cursor/rules/` con stack y estructura |
-| 03:24 - 04:14 | Crear Skill con `/create skill` en Cursor |
-| 04:14 - 05:07 | Demo ciclo TDD: test falla -> implementacion -> test pasa |
-| 05:07 - 06:34 | Setup proyecto: carpetas, tests iniciales, scripts |
-| 06:34 - 07:27 | Iterar skill: agregar contexto y comandos de verificacion |
-| 07:27 - FIN | Reto: aplicar lo aprendido con extension propia |
-
-## Puntos de Control
-
-- *Por que TDD es especialmente util cuando trabajas con agentes IA?*
-- *Que diferencia hay entre una rule y un skill en Cursor?*
-- *Que significa Progressive Disclosure y como beneficia al agente?*
-- *Como iteras un skill cuando descubres nuevos requisitos?*
-
-## Reflexion Final
-
-TDD con IA no es solo escribir tests. Es crear un contrato entre humano y maquina:
-
-- **El test es el contrato:** define exactamente que esperas.
-- **El agente es el ejecutor:** implementa para cumplir el contrato.
-- **La maquina se verifica a si misma:** no necesita supervision continua.
-
-Esto es lo que hace que los proyectos con IA sean mantenibles, escalables y auditables.
+1. ¿Por qué el TDD encaja especialmente bien cuando quien programa es un agente?
+2. ¿Qué distingue una **rule** de un **skill** en Cursor en términos de cuándo se carga y qué contiene?
+3. ¿Qué problema resuelve el **progressive disclosure** para el contexto del agente?
+4. ¿Cómo iterarías un skill cuando descubrís nuevos requisitos o comandos de verificación?
 
 ## Notas Personales
 

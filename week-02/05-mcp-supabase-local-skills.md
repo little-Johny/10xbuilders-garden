@@ -9,38 +9,58 @@ status: draft
 
 # MCP en Practica: Supabase Local + Skills
 
-> Conectar una base de datos local Supabase con Cursor mediante MCP para operar sobre datos reales sin salir del editor, usando skills como capa de orquestacion inteligente.
+> **Síntesis.** Conectar una base **Supabase** local al editor mediante **MCP** permite operar sobre datos y esquemas reales sin abandonar el flujo de trabajo, mientras los **skills** orquestan **CLI**, llamadas al protocolo y verificaciones para que el agente no quede atrapado en comandos interactivos o errores silenciosos.
 
-## Objetivos de Aprendizaje
+## Introducción
 
-- Levantar una instancia local de Supabase con Docker y gestionar migraciones versionadas en git.
-- Configurar MCP en Cursor para que el editor se comunique con herramientas externas de forma estructurada.
-- Usar MCP Inspector para depurar conexiones, explorar esquemas y validar respuestas antes de automatizar.
-- Disenar skills especializados que orquesten llamadas MCP y CLI, manejando errores y fricciones reales.
+Desarrollar contra una base real —aunque sea local— exige **reproducibilidad**: mismas migraciones, mismos contenedores, mismo esquema versionado en git. **Docker** aísla la infraestructura; la **CLI de Supabase** levanta PostgreSQL y servicios asociados. **MCP** estructura el acceso desde Cursor u otro cliente. **MCP Inspector** permite depurar antes de automatizar. Los **skills** van un paso más allá del «wrapper»: combinan pasos, manejo de errores y comprobaciones. La lección recorre ese stack y las **fricciones** habituales (comandos interactivos, SQL que falla sin señal clara, timeouts).
 
-## Conceptos Clave
+## Objetivos de aprendizaje
 
-- **Docker como entorno aislado:** Empaqueta toda la infraestructura (OS, dependencias, servicios) en contenedores. Permite desarrollar destructivamente: romper cosas sin afectar produccion ni el sistema local. Otro dev hace `supabase start` y obtiene exactamente tu estado.
+1. Levantar una instancia **local de Supabase** con Docker y gestionar **migraciones** versionadas en git.
+2. Configurar **MCP** en Cursor mediante el archivo de configuración del editor para hablar con herramientas externas de forma estructurada.
+3. Usar **MCP Inspector** para depurar conexiones, explorar esquemas y validar respuestas antes de integrar todo en un skill.
+4. Diseñar **skills** que orquesten llamadas MCP y CLI, con manejo explícito de errores y de modos no interactivos.
 
-- **Supabase local = PostgreSQL + tooling:** Supabase CLI levanta PostgreSQL, Auth y Storage localmente. Las migraciones son archivos SQL incrementales que quedan versionados en git, haciendo cada cambio auditable y reversible.
+## Marco conceptual
 
-- **MCP (Model Context Protocol):** Estandar abierto de Anthropic que estructura la comunicacion entre Claude y herramientas externas. Define dos primitivas: **recursos** (lecturas: esquemas, archivos, APIs) y **herramientas** (escrituras: comandos, queries, migraciones). Incluye control de permisos sobre quien puede hacer que.
+### Docker y entorno reproducible
 
-- **`.cursor/mcp.json`:** Archivo de configuracion donde cada entrada es un servidor MCP disponible en Cursor. Especifica el comando para levantar el servidor, sus argumentos y si esta habilitado.
+**Docker** empaqueta servicios en contenedores de modo que otro desarrollador puede recrear el mismo estado con comandos declarados. Eso permite experimentar sin contaminar el sistema host ni una base compartida accidentalmente.
 
-- **MCP Inspector:** Herramienta CLI (`npx @modelcontextprotocol/inspector`) que abre una interfaz web para probar MCPs interactivamente. Muestra recursos y herramientas disponibles, permite testear parametros y validar respuestas sin tocar la DB real. Esencial para depurar antes de integrar en skills.
+### Supabase local y migraciones
 
-- **Skills como orquestacion:** Un skill no es solo un wrapper de MCP. Combina logica condicional, composicion de pasos (CLI + MCP + verificacion), manejo de errores robusto y feedback progresivo. Ejemplo del proyecto: un skill de **modificacion** (crea migraciones via CLI) y otro de **inspeccion** (queries read-only via MCP).
+**Supabase** en local aporta **PostgreSQL** y herramientas coherentes con el producto cloud. Las **migraciones** son archivos SQL incrementales versionados junto al código: cada cambio de esquema queda **auditable** y reversible, alineado con prácticas de equipo.
 
-- **Fricciones reales y sus soluciones:** Comandos interactivos de Supabase bloquean Cursor (solucion: `--non-interactive`). Errores SQL silenciosos pasan desapercibidos (solucion: verificar con skill de inspeccion). Timeouts en operaciones largas (solucion: dividir en sub-pasos).
+### MCP como capa de acceso
 
-- **Arquitectura del flujo:** Cursor -> `.cursor/mcp.json` -> Servidor MCP -> Supabase CLI -> Docker (PostgreSQL). Cada capa tiene una responsabilidad clara y el skill orquesta el recorrido completo.
+**MCP** define cómo el cliente descubre **recursos** (lecturas: esquemas, metadatos) y **herramientas** (acciones: consultas, comandos acotados) con permisos explícitos. En `.cursor/mcp.json` (o equivalente) se registran los **servidores** disponibles: comando, argumentos y habilitación.
 
-## Puntos de Control
+### MCP Inspector
 
-- Si un comando de Supabase congela Cursor, cual es la causa probable y como lo resolverias?
-- Que ventaja concreta tiene que las migraciones SQL vivan en git junto al codigo?
-- Antes de integrar un MCP en un skill, que herramienta usarias para validar que funciona correctamente y por que?
+**MCP Inspector** (por ejemplo vía `npx @modelcontextprotocol/inspector`) abre una interfaz para probar servidores MCP: lista herramientas y recursos, permite ajustar parámetros y ver respuestas **sin** tocar aún la base productiva ni el skill final. Es el lugar indicado para validar conectividad y semántica antes de automatizar.
+
+### Skills como orquestación
+
+Un skill útil no se limita a «llamar al MCP». Combina **lógica condicional**, composición de pasos (CLI + MCP + verificación), manejo de fallos y mensajes claros. En proyectos de clase suele haber un skill más orientado a **modificación** (por ejemplo migraciones vía CLI) y otro a **inspección** (consultas de solo lectura vía MCP), lo que separa rutas peligrosas de exploración segura.
+
+### Fricciones frecuentes
+
+Los comandos **interactivos** de algunas CLIs pueden bloquear al agente: la mitigación típica es usar flags **no interactivos** donde existan. Los errores SQL a veces pasan **silenciosos** en flujos largos: conviene **verificar** con un paso de inspección o test. Las operaciones largas pueden **timeout**: partirlos en subpasos o acotar alcance reduce sorpresas.
+
+### Flujo en capas
+
+En líneas generales el recorrido es: **Cursor** lee configuración MCP → **servidor MCP** → **Supabase CLI** u operaciones sobre **Docker** (PostgreSQL). Cada capa tiene una responsabilidad; el **skill** documenta y encadena el recorrido para el agente.
+
+## Síntesis
+
+Supabase local más MCP más skills forma un **sistema**: datos reproducibles, acceso estructurado desde el editor y orquestación explícita que absorbe la complejidad operativa (incluidas las fricciones de terminal y SQL).
+
+## Preguntas de repaso
+
+1. Si un comando de Supabase **congela** Cursor, ¿cuál es una causa probable y cómo la abordarías?
+2. ¿Qué ventaja tiene que las migraciones SQL vivan en **git** junto al código de aplicación?
+3. Antes de integrar un MCP en un skill, ¿qué herramienta usarías para validar que responde como esperás y por qué?
 
 ## Notas Personales
 

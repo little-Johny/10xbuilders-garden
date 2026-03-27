@@ -9,38 +9,50 @@ status: draft
 
 # MCP: Concepto y Arquitectura
 
-> MCP es el estandar abierto que permite a agentes de IA conectarse con herramientas y datos externos de forma estructurada, funcionando como un "puerto USB" entre el modelo y el mundo real.
+> **Síntesis.** **MCP** (Model Context Protocol) es un estándar abierto que permite a los agentes de IA conectarse a **herramientas y datos externos** de forma estructurada, como un puerto común entre el modelo y sistemas que viven fuera del repo.
 
-## Objetivos de Aprendizaje
+## Introducción
 
-- Entender que problema resuelve MCP y por que un agente sin el esta limitado a codigo local e informacion en contexto.
-- Distinguir los roles de cliente y servidor MCP, y como interactuan en el flujo de descubrimiento y ejecucion de herramientas.
-- Comparar las dos formas de comunicacion (HTTP vs STDIO) y saber cuando usar cada una.
-- Evaluar los trade-offs de MCP (tokens, latencia, mantenimiento) y como mitigarlos.
+Sin un protocolo como MCP, un asistente queda limitado a lo que puede leer y ejecutar **localmente** y a lo que el usuario pega en el chat. Con MCP, el mismo agente puede consultar bases de datos, APIs corporativas, herramientas de issue tracking o investigar incidentes con datos reales, siempre que exista un **servidor MCP** que adapte ese sistema al contrato del protocolo. La lección separa los roles de **cliente** y **servidor**, describe el flujo de descubrimiento y ejecución de herramientas, y compara transportes **HTTP** y **STDIO**, además de los trade-offs de tokens y latencia.
 
-## Conceptos Clave
+## Objetivos de aprendizaje
 
-- **El problema que resuelve:** Sin MCP, un agente solo puede ejecutar codigo local y usar lo que ya tiene en contexto. Con MCP, puede consultar bases de datos, acceder a APIs externas (Jira, Slack, Google Ads), investigar bugs consultando logs y datos de usuario, todo sin intervencion manual.
+1. Explicar **qué problema** resuelve MCP y por qué un agente sin integraciones estructuradas está acotado al código local y al contexto manual.
+2. Distinguir **cliente** y **servidor** MCP y describir cómo interactúan en el descubrimiento y la invocación de herramientas.
+3. Comparar comunicación **HTTP** (hosteada) frente a **STDIO** (local) y saber en qué situaciones favorece cada una.
+4. Evaluar **trade-offs**: consumo de tokens, latencia, mantenimiento del servidor y mitigaciones (por ejemplo exponer solo herramientas relevantes).
 
-- **Arquitectura cliente-servidor:** El **cliente** (Claude, Cursor, ChatGPT) pregunta "que herramientas tenes?" y las invoca. El **servidor** es el adaptador que expone herramientas de un servicio externo (Supabase, GitHub, Chrome), las ejecuta cuando se le pide y devuelve resultados. Cada servidor es especializado en un servicio.
+## Marco conceptual
 
-- **Flujo de operacion en 3 pasos:** (1) El cliente descubre herramientas disponibles en el servidor. (2) El cliente elige y ejecuta una herramienta con parametros. (3) El agente procesa el resultado y decide si necesita otra llamada. Este ciclo se repite hasta resolver la tarea.
+### Problema que resuelve
 
-- **Comunicacion HTTP (hosteado):** El servidor vive en la nube, multiples clientes pueden conectarse simultaneamente. Ideal para produccion. Trade-off: requiere hosting, agrega 100-500ms de latencia por llamada.
+Sin MCP, el flujo típico es copiar datos a mano o escribir *glue* ad hoc. Con MCP, el agente invoca **herramientas** con parámetros tipados y recibe resultados que pueden alimentar el siguiente paso del razonamiento. Eso habilita flujos como consultar una base, listar issues o disparar acciones en un servicio, **sin** que cada integración reinvente un formato distinto.
 
-- **Comunicacion STDIO (local):** El servidor corre en tu maquina, comunicacion directa por stdin/stdout. Mas ligero, baja latencia, sin dependencias de red. Ideal para desarrollo. Trade-off: solo un cliente a la vez, acoplado a tu maquina.
+### Arquitectura cliente-servidor
 
-- **Consumo de tokens:** Cada herramienta expuesta suma tokens al contexto (descripcion, parametros, tipos, ejemplos). Con 50 herramientas, son ~2,500 tokens solo en descripciones. Mitigacion: exponer solo las herramientas relevantes para la tarea actual.
+El **cliente** (por ejemplo el IDE o el runtime del agente) pregunta qué herramientas expone un servidor y las invoca con argumentos. El **servidor MCP** es el adaptador: traduce el protocolo a llamadas concretas al sistema externo (Supabase, GitHub, navegador, etc.) y devuelve resultados normalizados. Cada servidor suele estar **especializado** en un servicio o familia de operaciones.
 
-- **Latencia adicional:** MCP es una capa mas entre cliente y servicio externo. El recorrido completo es: Cliente -> MCP -> API externa -> resultado -> MCP -> Cliente. En HTTP hosteado esto puede sumar cientos de milisegundos por llamada.
+### Flujo típico en tres movimientos
 
-- **MCP + Skill como combo:** El servidor MCP provee las herramientas, y un skill documenta como usarlas bien: patrones recomendados, ejemplos de uso, errores comunes. Esto acelera el aprendizaje del agente y reduce errores.
+Primero el cliente **descubre** las herramientas disponibles en el servidor. Luego **elige y ejecuta** una herramienta con parámetros acordes al esquema. Después el agente **interpreta** el resultado y decide si necesita otra llamada. Ese ciclo se repite hasta cerrar la tarea o hasta topar límites de política.
 
-## Puntos de Control
+### HTTP frente a STDIO
 
-- Cual es la diferencia fundamental entre un cliente MCP y un servidor MCP, y que responsabilidad tiene cada uno?
-- En que situacion elegirias STDIO sobre HTTP para la comunicacion con un servidor MCP?
-- Si tenes 50 herramientas MCP cargadas y tu agente se vuelve lento, cual es la causa probable y como lo mitigarias?
+Un servidor **HTTP** vive en red: puede atender varios clientes y suele usarse cuando el servicio ya está hosteado o compartido. El coste típico incluye **latencia de red** adicional —del orden de cientos de milisegundos por ida y vuelta según topología— y requisitos de despliegue. Un servidor **STDIO** corre **localmente** y habla por entrada y salida estándar con el proceso cliente: suele ser más **liviano** en latencia y más simple para desarrollo, a cambio de acoplarse a la máquina local y, en general, a un cliente a la vez en esa configuración.
+
+### Tokens, latencia y combo con skills
+
+Cada herramienta expuesta consume **tokens** en el cliente —descripciones, parámetros, tipos, ejemplos—. Con muchas herramientas cargadas a la vez, solo el catálogo puede ocupar miles de tokens; una mitigación es **exponer solo** lo necesario para la tarea. La latencia total incluye cliente → MCP → API externa → vuelta. Por eso a menudo se combina un **servidor MCP** (herramientas) con un **skill** (cómo usarlas bien: patrones, errores frecuentes, ejemplos), de modo que el agente aprende más rápido y comete menos fallos en la invocación.
+
+## Síntesis
+
+MCP estandariza **cómo** se descubren y ejecutan capacidades externas; el cliente y el servidor tienen roles claros; el transporte elige un compromiso entre **despliegue** y **latencia**. El diseño consciente del catálogo de herramientas y la documentación en skills reduce fricción y coste de contexto.
+
+## Preguntas de repaso
+
+1. ¿Cuál es la diferencia fundamental entre un **cliente** MCP y un **servidor** MCP, y qué responsabilidad tiene cada uno?
+2. ¿En qué situación elegirías **STDIO** sobre **HTTP** para comunicarte con un servidor MCP?
+3. Si tenés muchas herramientas MCP cargadas y el agente se vuelve lento o costoso, ¿cuál es una causa probable y cómo la mitigarías?
 
 ## Notas Personales
 
