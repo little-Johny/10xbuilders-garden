@@ -4,7 +4,7 @@ week: 1
 lesson: 3
 tags: [technical-brief, contexto, architecting, definition-of-done, constraints]
 date: 2026-03-19
-status: draft
+status: done
 ---
 
 # El Arte del "Technical Brief" (Architecting)
@@ -29,7 +29,13 @@ La formulación importa. Pedir «una función de impuestos» obliga al modelo a 
 
 ### Las cinco secciones del Technical Brief
 
-El **Technical Brief** es un documento corto que fija alcance antes de codificar. El **título** debe encajar el alcance en una frase con intención clara. El **contexto** explica por qué existe el problema y qué parte del sistema toca, para cortar suposiciones. Los **requerimientos técnicos** concretan stack, patrones, entradas y salidas, contratos y tipos: pasan de intención a algo que se puede verificar. Las **restricciones** listan qué no hacer, estándares, herramientas de test o lint y casos borde esperados; frenan dependencias inventadas y atajos. La **Definition of Done** fija criterios verificables —lint, cobertura, documentación pública— de modo que el éxito se mida con evidencia, no con «parece que anda».
+El **Technical Brief** es un documento corto que fija alcance antes de codificar. Se compone de cinco secciones obligatorias:
+
+1. **Título:** encaja el alcance en una frase con intención clara. No es el nombre de una función, sino una declaración de qué se va a resolver.
+2. **Contexto:** explica por qué existe el problema y qué parte del sistema toca. Corta suposiciones del modelo antes de que las invente.
+3. **Requerimientos técnicos:** concretan stack, patrones, entradas y salidas, contratos y tipos. Pasan de intención a algo que se puede verificar.
+4. **Restricciones:** listan qué no hacer, estándares, herramientas de test o lint y casos borde esperados. Frenan dependencias inventadas y atajos.
+5. **Definition of Done:** fija criterios verificables —lint, cobertura, documentación pública— de modo que el éxito se mida con evidencia, no con «parece que anda».
 
 ### Flujo de trabajo con crítica previa
 
@@ -51,4 +57,7 @@ El brief es el **instrumento de arquitectura** más barato: obliga a explicitar 
 
 ## Notas Personales
 
-<!-- Observaciones propias, conexiones con otros temas, o ideas que surgieron durante el estudio. -->
+La clase propone usar un technical brief a la hora de desarrollar tareas que requieran mucho contexto previo. Con el brief podemos dar más contexto, delimitar el alcance de la tarea y agregar restricciones, lo cual produce un resultado de mayor calidad que solo solicitar un feature, un fix o una nueva implementación.
+
+**Evaluar antes de ejecutar:**
+Se recomienda evaluar el brief con una IA para poder encontrar vacíos argumentales y mejorar la primera versión. Entre más claro sea, mejor será el resultado.

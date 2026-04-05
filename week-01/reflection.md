@@ -4,7 +4,7 @@ week: 1
 lesson: 0
 tags: [reflexión, semana-1]
 date: 2026-03-17
-status: draft
+status: done
 ---
 
 # Aprendizajes — primera semana (10x Builders)
@@ -41,4 +41,29 @@ Cerrar la semana con un texto propio —aunque sea medio folio— es un **acto d
 
 ## Notas Personales
 
-<!-- Completar: aprendizajes de la primera semana, track, ideas sueltas. -->
+### El entregable de la semana
+
+El objetivo de esta semana no fue solo aprender conceptos, sino producir **herramientas reutilizables** que queden en el repositorio. La idea es que cada nueva tarea con IA comience desde un sistema probado, no desde cero. Esto aumenta la consistencia en cómo se delega trabajo, reduce errores en código generado y mejora la calidad del resultado final.
+
+Los dos artefactos entregables son:
+
+1. **Plantilla Maestra de Briefs** — un archivo `.md` que funciona como molde reutilizable. No contiene una tarea específica; se copia y se completa cada vez. Sus secciones mínimas son: título, contexto, requerimientos técnicos, constraints y Definition of Done. Cada una cumple un rol concreto:
+   - **Contexto** describe el sistema actual, el problema y el objetivo, para que la IA no genere soluciones genéricas.
+   - **Requerimientos técnicos** delimitan stack, patrones, entradas/salidas e integraciones.
+   - **Constraints** listan lo que no se debe hacer y los estándares a respetar (type hints, tests, linter, librerías permitidas).
+   - **Definition of Done** fija criterios verificables (tests que pasan, métricas, formato de salida) para que "listo" sea medible.
+
+2. **Protocolo de Review** — una checklist de puntos críticos que se revisan antes de hacer commit. Cubre: alucinaciones de librerías (imports que no existen), lógica de negocio (floats para dinero, redondeos, edge cases), seguridad (inyección SQL, inputs sin validar, credenciales expuestas), pérdida de contexto (constraints ignorados, deriva del brief) y un quinto punto personalizable según el stack del proyecto.
+
+### Solución implementada
+
+Ambos artefactos están en la carpeta `ia-tools/01-planning/` del repositorio:
+
+```
+ia-tools/
+ └── 01-planning/
+     ├── master-technical-brief.md
+     └── master-protocol-preview.md
+```
+
+La plantilla de brief incluye secciones opcionales para alcance, arquitectura, contratos de datos, riesgos y referencias. El protocolo de review tiene tres niveles (rápido, estándar y profundo) que se escalan según el riesgo de la tarea.

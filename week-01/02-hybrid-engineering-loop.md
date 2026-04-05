@@ -56,4 +56,33 @@ BPIR convierte el chat en **cadena de entregas gobernadas**: el brief fija el co
 
 ## Notas Personales
 
-<!-- Observaciones propias, conexiones con otros temas, o ideas que surgieron durante el estudio. -->
+### BPIR como framework
+
+En este contexto, **framework** no se refiere a un framework de software (como React o Django). Se usa en su sentido general: un **marco de trabajo**, es decir, una estructura predefinida de pasos, roles y reglas que guía cómo se hace algo. BPIR define qué fases existen, quién es responsable en cada una, en qué orden se ejecutan y qué se espera como salida antes de avanzar. Sin un framework, cada sesión con IA es improvisación libre; con uno, hay un proceso repetible que se puede seguir, ajustar y mejorar con el tiempo.
+
+### Primero entender, después construir
+
+Antes de definir cualquier proceso con IA, hay que tener claridad sobre el problema que se quiere resolver. Sin esa claridad, ningún ciclo ni framework va a compensar la falta de dirección. La IA amplifica lo que le das: si le das ambigüedad, devuelve ruido; si le das un problema bien acotado, devuelve soluciones útiles.
+
+### El código es el último paso, no el primero
+
+La tentación natural es saltar directo a generar código. Esta clase refuerza que el valor real está en **pensar, planear y estructurar antes de escribir una sola línea**. El ciclo BPIR formaliza esa disciplina: obliga a pasar por Brief y Plan antes de llegar a Implementación, lo cual reduce retrabajo y decisiones arbitrarias del modelo.
+
+### El humano como director, no como espectador
+
+El BPIR no es un flujo donde se le delega todo a la IA y se espera el resultado. Es un bucle donde el humano **dirige y supervisa de manera consistente y constante** en cada fase. La IA ejecuta, pero las decisiones de qué hacer, si el plan tiene sentido y si el resultado cumple con lo esperado siempre pasan por el criterio humano.
+
+### Funcionamiento lógico del BPIR loop
+
+```
+  ┌─────────────────┐            ┌─────────────────┐
+  │  Brief          │ ─────────▶ │  Plan           │
+  │  Humano         │            │  Humano + IA    │
+  └─────────────────┘            └─────────────────┘
+           ▲                              │
+           │                              ▼
+  ┌─────────────────┐            ┌─────────────────┐
+  │  Review         │ ◀───────── │  Implementación │
+  │  Humano         │            │  IA             │
+  └─────────────────┘            └─────────────────┘
+```

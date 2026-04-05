@@ -4,7 +4,7 @@ week: 1
 lesson: 6
 tags: [auditing, code-review, checklist, seguridad, bpir, alucinaciones]
 date: 2026-03-19
-status: draft
+status: done
 ---
 
 # Code Review Forense (Auditing)
@@ -53,4 +53,10 @@ La auditoría forense cierra el BPIR con **criterios de ingeniería**: el modelo
 
 ## Notas Personales
 
-<!-- Observaciones propias, conexiones con otros temas, o ideas que surgieron durante el estudio. -->
+### La pregunta que cierra todo
+
+Antes de las checklists, los sandbox y los edge cases, hay una pregunta que debería pasar por la cabeza con cada bloque de código generado:
+
+> *"¿Este código debería existir y ser enviado a producción?"*
+
+Si la respuesta no es un sí claro, no hay checklist que lo salve. Es el filtro más simple y más honesto antes de hacer merge.

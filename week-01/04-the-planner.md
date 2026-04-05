@@ -4,7 +4,7 @@ week: 1
 lesson: 4
 tags: [planificación, the-planner, brief, arquitectura, negociación]
 date: 2026-03-19
-status: draft
+status: done
 ---
 
 # Planificación y Negociación (The Planner)
@@ -31,9 +31,20 @@ Si la IA arranca en código, suele inventar módulos, romper imports o ignorar l
 
 El **prompt de planificación** debe anclar el brief y exigir un plan paso a paso **sin código**: qué archivos se crean, cuáles se modifican y por qué, con la lógica de cada parte en prosa. Si aparece código, conviene cortar con una instrucción del tipo «solo el plan, sin código».
 
+> **Ejemplo de prompt:**
+> *"A partir del siguiente Technical Brief, generá únicamente un plan de implementación paso a paso. No escribas código. Para cada paso indicá: qué archivo se crea o modifica, por qué, y la lógica en prosa. Respetá las restricciones del brief."*
+
 ### Checklist humana sobre el plan
 
 Al revisar, conviene mirar en primer lugar **archivos y rutas** frente a las convenciones del repositorio; luego **dependencias e imports** —¿existen y eran compatibles con el brief?—; después el **orden lógico** —primero contratos y tipos, luego núcleo, después cableado y pruebas—; por último las **restricciones** —¿se proponen cambios en zonas prohibidas o sensibles?—.
+
+| ✅ | Verificar | Pregunta clave |
+|---|-----------|----------------|
+| ⬜ | **Archivos y rutas** | ¿Siguen las convenciones del repositorio? ¿Los nombres son consistentes? |
+| ⬜ | **Dependencias e imports** | ¿Existen realmente? ¿Son compatibles con lo que pide el brief? |
+| ⬜ | **Orden lógico** | ¿Primero contratos y tipos, luego núcleo, después cableado y pruebas? |
+| ⬜ | **Restricciones del brief** | ¿Se proponen cambios en zonas prohibidas o sensibles? |
+| ⬜ | **Alcance** | ¿El plan resuelve lo que pide el brief, sin agregar cosas que nadie pidió? |
 
 ### Negociación y registro
 
@@ -51,4 +62,15 @@ La negociación en fase Plan es el lugar idóneo para corregir: por ejemplo pedi
 
 ## Notas Personales
 
-<!-- Observaciones propias, conexiones con otros temas, o ideas que surgieron durante el estudio. -->
+### Iterar hasta que sea seguro implementar
+
+La clave no es generar un plan y aceptarlo. Es revisarlo, corregirlo y repetir hasta que sea seguro pasar a código. Cada escalón filtra errores antes de que se conviertan en deuda técnica.
+
+```
+Brief
+ └──▶ Plan
+       └──▶ Review humano
+             └──▶ Negociación
+                   └──▶ Plan aprobado → Implementación
+```
+

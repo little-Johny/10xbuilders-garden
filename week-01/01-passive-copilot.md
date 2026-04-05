@@ -45,8 +45,11 @@ El riesgo no es «usar mal el prompt», sino **no asignar responsabilidades clar
 
 ## Notas Personales
 
-**Clase 1 — X-lab (síndrome copiloto pasivo).** En la clase se nombró el patrón del «copiloto»: usar la IA como apoyo superficial en lugar de asumir el rol de quien dirige el trabajo.
+### No es un buscador
 
-**Resumen que tomé:** integrar IA no es solo autocompletar; así no se saca el máximo de la herramienta. **Tratarla como un buscador** está mal y no es su valor real. Lo que sí tiene sentido es pensarla como **reuso de ingeniería**: encargos del tipo «hacé **X** bajo estas condiciones…», donde uno define arquitectura, reglas y lógica, y **audita** resultados —en contraste con limitarse a escribir código con sugerencias de la IA o solo hacer preguntas puntuales.
+El error más común es tratar la IA como un buscador: hacerle preguntas sueltas y esperar respuestas genéricas. Ese no es su valor real. La diferencia está en pasar de *preguntar* a *encargar*, definiendo las condiciones bajo las cuales debe trabajar.
 
-<!-- Más observaciones propias, conexiones con otros temas, ideas. -->
+```
+  Buscador          →  "¿Cómo hago X?"
+  Recurso de ing.   →  "Hacé X bajo estas condiciones, con estas reglas"
+```

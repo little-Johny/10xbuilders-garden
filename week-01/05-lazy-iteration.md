@@ -4,7 +4,7 @@ week: 1
 lesson: 5
 tags: [lazy-iteration, implementación, revisión-humana, bug-bash, tdd]
 date: 2026-03-19
-status: draft
+status: done
 ---
 
 # Implementación y "Lazy Iteration"
@@ -55,4 +55,10 @@ Lazy iteration acopla la velocidad del modelo a un **ritmo de validación humana
 
 ## Notas Personales
 
-<!-- Observaciones propias, conexiones con otros temas, o ideas que surgieron durante el estudio. -->
+### Separar chat de planificación y de implementación
+
+No implementar en el mismo chat donde se planeó o creó el brief. Usar un chat nuevo para la implementación optimiza la ventana de contexto y evita que el modelo arrastre ruido de la conversación de diseño.
+
+### Bug Bash simulado como prueba de diseño
+
+El Bug Bash simulado consiste en introducir un requisito inesperado a mitad de la implementación para evaluar cómo responde el agente de IA. No se busca que falle, sino observar **cómo** resuelve el cambio: si extiende el diseño de forma limpia (nuevas reglas, estrategias separadas) o si cae en parches frágiles (`if` sueltos, lógica duplicada, condicionales anidados). Es una forma práctica de medir si la arquitectura que se está construyendo es realmente extensible o solo funciona para el caso feliz. Si la respuesta es un parche, es señal de que hay que pedir un refactor antes de seguir avanzando.
