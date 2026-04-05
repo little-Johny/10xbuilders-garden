@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Link, Navigate } from 'react-router-dom'
 import { Avatar } from '../components/Avatar'
 import { BrandLogo } from '../components/BrandLogo'
+import { TweetCard } from '../components/TweetCard'
 import { useAuth } from '../contexts/AuthContext'
 
 export default function FeedPage() {
@@ -13,14 +14,17 @@ export default function FeedPage() {
   const [posting, setPosting] = useState(false)
 
   const loadTweets = useCallback(async () => {
-    const res = await fetch('/api/tweets')
+    const headers = session?.access_token
+      ? { Authorization: `Bearer ${session.access_token}` }
+      : {}
+    const res = await fetch('/api/tweets', { headers })
     const data = await res.json().catch(() => ({}))
     if (!res.ok) {
       setTweets([])
       return
     }
     setTweets(data.tweets ?? [])
-  }, [])
+  }, [session])
 
   useEffect(() => {
     if (!ready || !session) return
@@ -73,17 +77,6 @@ export default function FeedPage() {
 
   if (!session) {
     return <Navigate to="/login" replace />
-  }
-
-  const getAuthorInfo = (tweet) => {
-    const p = Array.isArray(tweet.profiles)
-      ? tweet.profiles[0]
-      : tweet.profiles
-    const name = p?.display_name || p?.username || 'Usuario'
-    const username = p?.username ?? null
-    const handle = username ? `@${username}` : ''
-    const avatarUrl = p?.avatar_url ?? null
-    return { name, handle, username, avatarUrl }
   }
 
   return (
@@ -182,59 +175,9 @@ export default function FeedPage() {
           </p>
         ) : (
           <ul>
-            {tweets.map((tweet) => {
-              const { name, handle, username, avatarUrl } = getAuthorInfo(tweet)
-              return (
-                <li
-                  key={tweet.id}
-                  className="cursor-default border-b border-xline px-4 py-3 transition hover:bg-x-hover"
-                >
-                  <div className="flex gap-3">
-                    {username ? (
-                      <Link to={`/profile/${username}`} aria-label={`Perfil de ${name}`}>
-                        <Avatar src={avatarUrl} name={name} size="md" />
-                      </Link>
-                    ) : (
-                      <Avatar src={avatarUrl} name={name} size="md" />
-                    )}
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
-                        {username ? (
-                          <Link
-                            to={`/profile/${username}`}
-                            className="truncate text-[15px] font-bold text-x-text hover:underline"
-                          >
-                            {name}
-                          </Link>
-                        ) : (
-                          <span className="truncate text-[15px] font-bold text-x-text">
-                            {name}
-                          </span>
-                        )}
-                        <span className="text-[15px] text-x-secondary">
-                          {handle}
-                        </span>
-                        <span className="text-[15px] text-x-secondary">·</span>
-                        <time
-                          className="text-[15px] text-x-secondary"
-                          dateTime={tweet.created_at || undefined}
-                        >
-                          {tweet.created_at
-                            ? new Date(tweet.created_at).toLocaleDateString(
-                                undefined,
-                                { month: 'short', day: 'numeric' }
-                              )
-                            : ''}
-                        </time>
-                      </div>
-                      <p className="mt-0.5 whitespace-pre-wrap break-words text-[15px] leading-5 text-x-text">
-                        {tweet.content}
-                      </p>
-                    </div>
-                  </div>
-                </li>
-              )
-            })}
+            {tweets.map((tweet) => (
+              <TweetCard key={tweet.id} tweet={tweet} />
+            ))}
           </ul>
         )}
       </main>

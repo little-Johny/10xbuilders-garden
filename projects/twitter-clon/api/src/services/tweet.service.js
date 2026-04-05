@@ -12,10 +12,12 @@ const TWEET_SELECT = `
     username,
     display_name,
     avatar_url
-  )
+  ),
+  tweet_likes ( count ),
+  comments ( count )
 `
 
-export async function listTweets() {
+export async function listTweets(token) {
   try {
     const supabase = getSupabaseAnon()
     const { data, error } = await supabase
@@ -28,10 +30,43 @@ export async function listTweets() {
       return { status: 500, body: { error: error.message } }
     }
 
-    return { status: 200, body: { tweets: data ?? [] } }
+    let userId = null
+    let authClient = null
+    if (token) {
+      authClient = getSupabaseWithAccessToken(token)
+      const { data: { user } } = await authClient.auth.getUser()
+      userId = user?.id ?? null
+    }
+
+    let likedSet = new Set()
+    if (userId && data?.length) {
+      const tweetIds = data.map((t) => t.id)
+      const { data: likes } = await authClient
+        .from('tweet_likes')
+        .select('tweet_id')
+        .eq('user_id', userId)
+        .in('tweet_id', tweetIds)
+      likedSet = new Set((likes ?? []).map((l) => l.tweet_id))
+    }
+
+    const tweets = (data ?? []).map((t) => normalizeTweet(t, likedSet))
+    return { status: 200, body: { tweets } }
   } catch (e) {
     console.error(e)
     return { status: 500, body: { error: 'Error interno' } }
+  }
+}
+
+function normalizeTweet(t, likedSet) {
+  return {
+    id: t.id,
+    content: t.content,
+    created_at: t.created_at,
+    author_id: t.author_id,
+    profiles: t.profiles,
+    like_count: t.tweet_likes?.[0]?.count ?? 0,
+    comment_count: t.comments?.[0]?.count ?? 0,
+    user_has_liked: likedSet.has(t.id),
   }
 }
 
@@ -68,7 +103,7 @@ export async function createTweet(token, rawContent) {
       return { status: 400, body: { error: error.message } }
     }
 
-    return { status: 201, body: { tweet: data } }
+    return { status: 201, body: { tweet: normalizeTweet(data, new Set()) } }
   } catch (e) {
     console.error(e)
     return { status: 500, body: { error: 'Error interno' } }

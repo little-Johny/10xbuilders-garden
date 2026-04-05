@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { Avatar } from '../components/Avatar'
 import { BrandLogo } from '../components/BrandLogo'
+import { TweetCard } from '../components/TweetCard'
 import { useAuth } from '../contexts/AuthContext'
 
 export default function ProfilePage() {
@@ -298,38 +299,7 @@ export default function ProfilePage() {
           ) : (
             <ul>
               {tweets.map((tweet) => (
-                <li
-                  key={tweet.id}
-                  className="border-b border-xline px-4 py-3 hover:bg-x-hover"
-                >
-                  <div className="flex gap-3">
-                    <Avatar
-                      src={profileData?.avatar_url}
-                      name={profileData?.display_name || username}
-                      size="md"
-                    />
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-baseline gap-x-1.5">
-                        <span className="text-[15px] font-bold text-x-text">
-                          {profileData?.display_name}
-                        </span>
-                        <span className="text-[15px] text-x-secondary">@{profileData?.username}</span>
-                        <span className="text-[15px] text-x-secondary">·</span>
-                        <time className="text-[15px] text-x-secondary" dateTime={tweet.created_at}>
-                          {tweet.created_at
-                            ? new Date(tweet.created_at).toLocaleDateString(undefined, {
-                                month: 'short',
-                                day: 'numeric',
-                              })
-                            : ''}
-                        </time>
-                      </div>
-                      <p className="mt-0.5 whitespace-pre-wrap break-words text-[15px] leading-5 text-x-text">
-                        {tweet.content}
-                      </p>
-                    </div>
-                  </div>
-                </li>
+                <TweetCard key={tweet.id} tweet={tweet} />
               ))}
             </ul>
           )}

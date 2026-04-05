@@ -56,7 +56,12 @@ export async function getProfileByUsername(username) {
 
     const { data: tweets, error: tweetsError } = await supabase
       .from('tweets')
-      .select('id, content, created_at, author_id')
+      .select(`
+        id, content, created_at, author_id,
+        profiles!tweets_author_id_fkey ( username, display_name, avatar_url ),
+        tweet_likes ( count ),
+        comments ( count )
+      `)
       .eq('author_id', profile.id)
       .order('created_at', { ascending: false })
       .limit(50)
@@ -65,7 +70,18 @@ export async function getProfileByUsername(username) {
       return { status: 500, body: { error: tweetsError.message } }
     }
 
-    return { status: 200, body: { profile, tweets: tweets ?? [] } }
+    const normalizedTweets = (tweets ?? []).map((t) => ({
+      id: t.id,
+      content: t.content,
+      created_at: t.created_at,
+      author_id: t.author_id,
+      profiles: t.profiles,
+      like_count: t.tweet_likes?.[0]?.count ?? 0,
+      comment_count: t.comments?.[0]?.count ?? 0,
+      user_has_liked: false,
+    }))
+
+    return { status: 200, body: { profile, tweets: normalizedTweets } }
   } catch (e) {
     console.error(e)
     return { status: 500, body: { error: 'Error interno' } }
