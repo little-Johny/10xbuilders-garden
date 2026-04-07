@@ -4,7 +4,7 @@ week: 2
 lesson: 8
 tags: [subagents, delegación, contexto, qa, code-review, cursor, flujo-de-trabajo, costo]
 date: 2026-03-25
-status: draft
+status: done
 ---
 
 # SubAgents: contexto fresco y delegación
@@ -57,7 +57,3 @@ Los subagents atacan el problema de la **saturación del contexto** separando el
 1. ¿Qué tipo de mensajes en una sesión larga suelen añadir ruido al contexto sin aportar al objetivo inmediato del turno siguiente?
 2. Si delegas tests a un subagent y revisión a otro, ¿qué información mínima debería conservar la conversación principal para que puedas seguir planificando la siguiente feature con claridad?
 3. ¿En qué situación preferirías no abrir un subagent y resolver todo en el mismo chat?
-
-## Notas Personales
-
-<!-- Observaciones propias, conexiones con otros temas, ideas. -->

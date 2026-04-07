@@ -47,10 +47,6 @@ Un skill **no** es estático. Un primer ciclo puede definir solo **estructura** 
 
 En la práctica, un skill puede organizarse como carpetas con `SKILL.md`, tests de ejemplo, código de referencia y scripts de verificación. La forma exacta depende del repo; lo importante es que **SKILL.md** describa objetivo y pasos de forma que el agente los descubra con progressive disclosure.
 
-### Referencia de tiempos de la sesión
-
-La grabación sigue aproximadamente este orden: introducción al TDD con IA (0:00–0:18); ciclo Red/Green y **autoverificación** frente a supervisión continua (0:18–1:04); configuración de **rules** en `.cursor/rules/` con stack y estructura (1:04–3:24); creación de skill con `/create skill` (3:24–4:14); demostración del ciclo TDD (4:14–5:07); setup de carpetas, tests iniciales y scripts (5:07–6:34); iteración del skill con más contexto y comandos (6:34–7:27); cierre y reto (7:27 en adelante).
-
 ## Síntesis
 
 TDD con IA no es solo «escribir tests»: es un **contrato explícito** entre humano y máquina. El test define **qué** se espera; el agente **implementa** para cumplirlo; la suite permite que la **máquina** verifique su trabajo de forma repetible. Ese trío hace que el proyecto sea más mantenible, escalable y auditable que un flujo solo de prompts.
@@ -64,6 +60,25 @@ TDD con IA no es solo «escribir tests»: es un **contrato explícito** entre hu
 
 ## Notas Personales
 
-- Instale Cursor porque en el curso usan ese IDE y queria probarlo ya que tenia acceso a el (Ubuntu).
-- Lo primero es crear las REGLAS de juego antes de cualquier implementacion.
-- Cree mi propia version del `working-method.mdc` con TDD como centro del flujo, no solo como verificacion posterior.
+### Scaffolding y vínculo con la clase
+
+En pedagogía, **scaffolding** (*andamiaje*) es el apoyo temporal que se retira cuando quien aprende ya puede sostener solo la tarea. En esta clase el paralelo es directo: no se espera que el agente «adivine» el flujo del repo desde cero cada vez. Las **reglas** fijan el terreno (stack, carpetas, principios), los **skills** despliegan procedimientos solo cuando aplican (**progressive disclosure**), y el **TDD** actúa como riel: el test dice qué debe cumplirse antes de que exista el código. Eso es andamiaje para el agente: estructura compartida que reduce improvisación y hace verificable el trabajo. Cuando el sistema está bien calibrado, el mismo proyecto necesita menos micromanagement en el chat porque el andamiaje ya «sostiene» buena parte del criterio.
+
+En la práctica del curso, **andamiaje** fue también el **setup inicial** de `projects/twitter-clon/`: combinando las **reglas** del repo con el skill **`tdd-working`**, se le pidió al **agente de Cursor** que generara esa base (estructura del monorepo, convenciones, comandos de verificación, enfoque TDD). Una vez existió ese cuerpo común del proyecto, lo pertinente fue **volcar ese contexto dentro del propio skill** —rutas reales, scripts, dónde viven los tests— para que cada vez que se active `tdd-working` el agente no dependa de un chat previo. Es el mismo principio de **iteración** del marco conceptual: los **skills**, al igual que **reglas**, **MCPs** y **agentes** (subagents u otros), conviene **ir actualizándolos** cuando el proyecto cambia; si el sistema alrededor del LLM queda desactualizado, el andamiaje deja de sostener y vuelve la improvisación.
+
+### Ejemplos de skills en este repositorio
+
+En el clon de Twitter del workspace, los skills viven bajo:
+
+**`projects/twitter-clon/.cursor/skills/`**
+
+Cada carpeta contiene un `SKILL.md` (frontmatter con `name` y `description` + cuerpo del procedimiento):
+
+| Carpeta | Rol breve |
+|---------|-----------|
+| [`inspecting-db/`](../projects/twitter-clon/.cursor/skills/inspecting-db/SKILL.md) | Inspección de Supabase en solo lectura vía MCP local (esquema, SELECT, depuración). |
+| [`modifying-db/`](../projects/twitter-clon/.cursor/skills/modifying-db/SKILL.md) | Migraciones y cambios de esquema con la CLI de Supabase en este proyecto. |
+| [`tdd-working/`](../projects/twitter-clon/.cursor/skills/tdd-working/SKILL.md) | TDD estricto con Jest (Red → Green → Refactor) acoplado a la estructura del monorepo. |
+| [`executing-browser/`](../projects/twitter-clon/.cursor/skills/executing-browser/SKILL.md) | Uso del CLI **agent-browser** para snapshots, screenshots y pruebas ligeras en el navegador. |
+
+Sirven como referencia concreta de cómo se documenta un flujo repetible para el agente en un proyecto real del curso.

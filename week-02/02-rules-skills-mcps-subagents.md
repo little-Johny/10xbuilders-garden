@@ -4,7 +4,7 @@ week: 2
 lesson: 2
 tags: [reglas, skills, mcps, subagents, arquitectura, sistemas, orquestacion]
 date: 2026-03-16
-status: in-progress
+status: done
 ---
 
 # Los 4 Componentes: Reglas, Skills, MCPs, SubAgents
@@ -62,4 +62,16 @@ Los cuatro componentes no compiten: se **combinan**. Las reglas fijan el terreno
 
 ## Notas Personales
 
-<!-- Observaciones propias, conexiones con otros temas, ideas. -->
+### Ejemplo de flujo «real»: los cuatro componentes en una tarea pequeña
+
+**Situación.** En un proyecto web con API, base en Supabase y tests en el repo, te piden: *«Mostrar en el perfil cuántos tweets publicó el usuario»*. No es un feature enorme, pero toca backend, esquema, contrato de API y calidad.
+
+1. **Reglas** — Antes de escribir código, el agente ya opera con lo que está en `.cursor/rules` (o equivalente): por ejemplo *el frontend no llama a Supabase directo*, *los tests de UI viven en `app/test/`* o *no commitear `.env`*. Eso evita que cada mensaje renegocie principios del equipo; el hilo principal no se «ensucia» repitiendo políticas.
+
+2. **Skills** — Para la parte de base de datos, el agente no improvisa: dispara el skill adecuado (p. ej. *inspecting-db* primero para ver tablas/columnas, *modifying-db* después para una migración con pasos claros y flags no interactivos). El skill es la **receta ensayada**: menos alucinación en el procedimiento y menos tokens que pegar un tutorial entero en el chat.
+
+3. **MCP** — Para confirmar el esquema vivo o probar una consulta sin copiar/pegar credenciales en el prompt, entra el **MCP** (p. ej. servidor Supabase local). El agente **invoca herramientas** del catálogo: listar tablas, ejecutar una lectura de prueba. Los datos no viajan como texto libre en la conversación; el contrato es estable y repetible.
+
+4. **SubAgents** — Con la implementación lista, conviene **no** mezclar en el mismo hilo una revisión larga de tests E2E o una pasada de seguridad. Se delega un **subagent** (p. ej. QA o reviewer): corre la batería de tests, opcionalmente automatiza el navegador, y devuelve **un resumen** al flujo principal. El chat principal se queda con el diseño y los cambios; el trabajo paralelo no infla el contexto.
+
+**Panorama.** En una tarea así, ningún componente «hace todo»: las **reglas** fijan límites, el **skill** guía lo repetible, el **MCP** conecta con la fuente de verdad externa y el **subagent** aísla el trabajo secundario. Si faltara la regla, reaparece la microgestión; sin skill, cada migración es improvisación; sin MCP, volvés a copiar datos a mano; sin subagent, el mismo hilo mezcla implementación y verificación hasta colapsar el contexto.

@@ -4,7 +4,7 @@ week: 2
 lesson: 1
 tags: [mindset, escalabilidad, agentes, orquestacion, skills, mcps, subagents]
 date: 2026-03-16
-status: in-progress
+status: done
 ---
 
 # De Jugador Estrella a Director Tecnico
@@ -59,6 +59,3 @@ El salto de jugador a director técnico es **organizacional**: de ejecutar tarea
 2. ¿Qué tareas actuales podrían resolverse con un skill o un subagent en lugar de un prompt manual cada vez?
 3. ¿Estás optimizando solo para la tarea de hoy o para el siguiente centenar de casos parecidos?
 
-## Notas Personales
-
-<!-- Observaciones propias, conexiones con otros temas, ideas. -->

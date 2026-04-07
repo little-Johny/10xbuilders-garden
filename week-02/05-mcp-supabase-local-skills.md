@@ -4,7 +4,7 @@ week: 2
 lesson: 6
 tags: [mcp, supabase, docker, skills, cursor, postgresql, migraciones]
 date: 2026-03-22
-status: draft
+status: done
 ---
 
 # MCP en Practica: Supabase Local + Skills
@@ -64,4 +64,29 @@ Supabase local más MCP más skills forma un **sistema**: datos reproducibles, a
 
 ## Notas Personales
 
-<!-- Observaciones propias, conexiones con otros temas, ideas. -->
+El hilo práctico de la clase fue **armar la base del `twitter-clon`**: Supabase local con **Docker**, **CLI** para migraciones versionadas en git, **MCP** en Cursor y dos **skills** que separan lo peligroso (cambiar esquema) de lo seguro (solo lectura).
+
+**Supabase CLI.** Hace falta para `supabase start`, `db reset` y crear/aplicar migraciones. En este monorepo la CLI viene como dependencia de desarrollo en la raíz de `projects/twitter-clon/`: tras `npm install` ahí, conviene usar **`npx supabase …`** para alinear la versión con el `package.json`. Alternativa: instalar global con Homebrew (`brew install supabase/tap/supabase`) o `npm install -g supabase`. El detalle de opciones está en el README del proyecto (`projects/twitter-clon/README.md`, sección de herramientas y Supabase CLI).
+
+**Configuración MCP en el repo.** El servidor que usa el curso apunta al endpoint que expone Supabase local cuando los contenedores están arriba. El archivo vive en `projects/twitter-clon/.cursor/mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "local-supabase": {
+      "url": "http://localhost:54321/mcp",
+      "headers": {}
+    }
+  }
+}
+```
+
+Sin `npx supabase start` (o equivalente), ese URL no responde: el MCP depende del stack local en el puerto **54321**.
+
+**Cursor y reconocimiento del MCP.** Conviene abrir **como carpeta de trabajo la raíz donde está `.cursor/`** —en la práctica, `projects/twitter-clon/`— para que el editor cargue `mcp.json` del proyecto sin ambigüedades. Para comprobar que el servidor está registrado y habilitado: **Cmd + Shift + P** (macOS) → buscar **MCP** → **View Open MCP settings** (o el comando equivalente que liste servidores MCP).
+
+**Depuración previa al skill.** Antes de confiar en el flujo dentro del agente, tiene sentido probar el servidor con **`npx @modelcontextprotocol/inspector`** (paquete npm oficial del MCP Inspector), igual que en el cuerpo de la lección: misma idea, nombre de paquete correcto.
+
+**Los dos skills del repo.** En `projects/twitter-clon/.cursor/skills/` quedaron **`modifying-db`** (migraciones vía CLI, directorio de trabajo la raíz del twitter-clon, cuidado con comandos no interactivos) e **`inspecting-db`** (inspección **solo lectura** vía herramientas del MCP **`local-supabase`**, sin usar el MCP para mutar esquema o datos). Esa división evita mezclar SQL destructivo con exploración.
+
+**Migraciones y esquema inicial.** Las migraciones SQL versionadas viven en `projects/twitter-clon/supabase/migrations/`; el esquema inicial del curso cubrió lo necesario para el producto (perfiles, tweets, relaciones, RLS, etc.) y el flujo de **generar migración + aplicar en local** quedó encapsulado en el skill de modificación, alineado con lo que ya dice el marco conceptual sobre git y reproducibilidad —acá solo el ancla al árbol real del repositorio.

@@ -4,7 +4,7 @@ week: 2
 lesson: 6
 tags: [cli, mcp, tokens, eficiencia, unix, skills, composicion]
 date: 2026-03-23
-status: draft
+status: done
 ---
 
 # CLI como Alternativa a MCP
@@ -48,6 +48,12 @@ Cuando hace falta **gobernanza** —quién ejecutó qué, con qué credencial—
 
 En **desarrollo local**, crear migraciones con la CLI de Supabase, inspeccionar el esquema con `psql` o listar PRs con `gh` suele ser más **rápido y barato** en tokens que encadenar solo MCP genéricos. Para **producción** —datos reales, permisos, trazabilidad— puede ser obligatorio un camino con más control y registro, donde MCP o procesos similares encajan mejor.
 
+### Ejemplos reales: ¿CLI o MCP?
+
+**Escenario A — conviene la CLI.** Estás en tu máquina con Supabase local ya levantado (`npx supabase start`) y necesitás confirmar cómo se llama una columna o si un índice existe antes de escribir una migración en el `twitter-clon`. Correr `psql` contra `localhost` o `npx supabase db diff` y, si hace falta, enchufar la salida a `grep` o a un archivo es **directo**: no exponés credenciales de ningún entorno remoto, no necesitás que quede registro central de «quién preguntó qué» y el coste en tokens para el agente es mínimo si ejecuta esos comandos por terminal en lugar de hidratar un catálogo MCP entero. El criterio es: **entorno local, sin política corporativa fuerte, resultado desechable**.
+
+**Escenario B — conviene MCP.** El mismo agente debe ayudar a inspeccionar datos o metadatos en un contexto donde **no** podés darle al modelo acceso directo a la red interna ni pegar connection strings en el chat: un **servidor MCP** actúa de puerta de entrada, aplica permisos en el host, y solo devuelve al modelo el **resultado acotado** de una herramienta ya definida (por ejemplo lecturas vía un endpoint interno). Ahí el sobrecosto en tokens se paga a cambio de **separación de secretos**, **trazabilidad** (quién invocó qué herramienta) y **contrato estable** para el agente —similar a usar el MCP de Supabase local en el curso cuando querés que Cursor descubra herramientas con esquema conocido sin que el flujo dependa de copiar SQL a mano. El criterio es: **acceso gobernado, auditoría o datos sensibles fuera del alcance directo del modelo**.
+
 ## Síntesis
 
 CLI y MCP responden a **distintas restricciones**: la primera maximiza control local, composición y economía de contexto; la segunda maximiza **estructura**, integración uniforme y políticas centralizadas. Los skills permiten presentar al agente una cara simple sin ocultar la elección técnica entre ambos mundos.
@@ -60,4 +66,8 @@ CLI y MCP responden a **distintas restricciones**: la primera maximiza control l
 
 ## Notas Personales
 
-<!-- Observaciones propias, conexiones con otros temas, ideas. -->
+El eje de la sesión es **cuándo conviene la CLI frente a MCP**: no es dogma anti-MCP, sino **emparejar herramienta y restricción** (tokens, latencia, gobernanza). En la clase se trajeron cifras orientativas de estudios comparativos: el coste en **tokens** de flujos equivalentes puede dispararse por metadatos de herramientas, descripciones verbosas o diseños poco ajustados del servidor MCP —se habló de **órdenes de magnitud** del orden de **4× a 32×** respecto a una cadena CLI comparable para el mismo resultado observable. También se contrastaron **tasas de éxito** aproximadas en esos experimentos (en torno a **72%** vía MCP versus **100%** con CLI en el escenario citado). Son números para **calibrar intuición**, no leyes universales: el marco conceptual del apunte ya explica por qué el overhead de esquemas y catálogos puede pesar tanto.
+
+**Para el día a día de desarrollo local**, el takeaway práctico que me llevo es que la **CLI suele ser la herramienta más barata y directa** cuando no hace falta intermediario auditado ni ocultar secretos al modelo: por ejemplo en el `twitter-clon`, migraciones y `psql`/`supabase` desde terminal encajan con lo que ya dice la lección sobre el proyecto.
+
+**Reto de la clase: usar un CLI real.** La consigna fue implementar o integrar flujo con una **CLI** concreta; instalé la **CLI oficial de GitHub** (`gh`) —cliente para repos, PRs, issues, `gh api`, etc.— que encaja bien con la idea de **composición** y comandos pequeños sin pasar por un servidor MCP. Instalación típica: [GitHub CLI](https://cli.github.com/) (`brew install gh` en macOS, paquetes en Linux, instalador en Windows); luego `gh auth login` para asociar credenciales. No sustituye al contenido del apunte sobre cuándo MCP sigue siendo obligatorio en entornos con políticas estrictas.

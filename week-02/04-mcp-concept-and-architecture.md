@@ -4,7 +4,7 @@ week: 2
 lesson: 4
 tags: [mcp, arquitectura, cliente-servidor, herramientas, stdio, http]
 date: 2026-03-23
-status: draft
+status: done
 ---
 
 # MCP: Concepto y Arquitectura
@@ -54,6 +54,3 @@ MCP estandariza **cómo** se descubren y ejecutan capacidades externas; el clien
 2. ¿En qué situación elegirías **STDIO** sobre **HTTP** para comunicarte con un servidor MCP?
 3. Si tenés muchas herramientas MCP cargadas y el agente se vuelve lento o costoso, ¿cuál es una causa probable y cómo la mitigarías?
 
-## Notas Personales
-
-<!-- Observaciones propias, conexiones con otros temas, ideas. -->

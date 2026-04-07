@@ -4,7 +4,7 @@ week: 2
 lesson: 9
 tags: [subagents, qa, cursor, testing, delegación, agent-browser, rules]
 date: 2026-03-26
-status: draft
+status: done
 ---
 
 # Crear e integrar un SubAgent de QA Engineer
@@ -64,4 +64,27 @@ Integrar un QA Engineer es un ciclo **crear → enlazar reglas → delegar → i
 
 ## Notas Personales
 
-Planeo crear un **subagente de documentación** para el proyecto (bitácora técnica, decisiones, apuntes), en paralelo al de QA que vimos en sesión.
+En la práctica del curso conectamos la teoría de **delegación y contexto fresco** con dos **subagents** definidos en el `twitter-clon`: uno para **verificación** después de implementar y otro para **documentación** sin tocar código. Ambos viven en `projects/twitter-clon/.cursor/agents/` y el agente principal los invoca con una tarea acotada; ellos devuelven **informe resumido** al hilo principal, en línea con lo que describe el marco conceptual de la lección anterior.
+
+### `qa-engineer`
+
+- **Archivo:** [`projects/twitter-clon/.cursor/agents/qa-engineer.md`](../projects/twitter-clon/.cursor/agents/qa-engineer.md)
+- **Rol:** Especialista en **QA post-cambio**: ejecuta `npm test` (Jest en `app/` y `api/`) y, cuando el cambio toca UI o flujos web, prueba en navegador con **agent-browser** siguiendo el skill [`executing-browser`](../projects/twitter-clon/.cursor/skills/executing-browser/SKILL.md).
+- **Salida esperada:** Informe con casos (éxito/fallo), fragmentos de log útiles y **screenshots** como evidencia; si falta herramienta o puerto, lo declara explícitamente.
+- **Cuándo conviene:** Tras una feature o cuando el usuario pida validación, regresión o «¿pasó QA?» —mantiene fuera del hilo principal el detalle de cada comando y captura.
+
+### `project-documenter`
+
+- **Archivo:** [`projects/twitter-clon/.cursor/agents/project-documenter.md`](../projects/twitter-clon/.cursor/agents/project-documenter.md)
+- **Rol:** **Documentador técnico** con responsabilidad distinta a QA y a code review: analiza el repo (lectura) y **escribe o actualiza** documentación persistente en español —`README.md`, `docs/TIMELINE.md`, `docs/LEARNING_MAP.md`, u otros Markdown bajo `docs/` (templates de clase, guías, checklists). **No modifica código fuente** de aplicación.
+- **Modos:** (A) mantenimiento de la documentación estándar del proyecto; (B) documentos personalizados bajo `docs/` con plantillas reutilizables.
+- **Cuándo conviene:** Cuando haya que **sincronizar** la historia del proyecto con el código, preparar material de curso o dejar constancia sin mezclar esa tarea con el hilo de implementación.
+
+### Cómo se complementan
+
+| Subagent | Evita en el hilo principal | Entrega típica al principal |
+|----------|-----------------------------|-----------------------------|
+| **qa-engineer** | Logs largos de Jest, rutas de screenshots, iteraciones de agent-browser | Veredicto + lista de casos + evidencia mínima |
+| **project-documenter** | Barridos del repo solo para redactar `docs/` | Resumen de qué archivos se crearon o actualizaron y dónde |
+
+Ambos encajan en el patrón de la lección anterior: **contexto aislado**, **entrada clara** y **salida agregada** para que el chat donde se diseña el producto no arrastre el detalle operativo de cada rol.

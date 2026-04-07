@@ -4,7 +4,7 @@ week: 2
 lesson: 7
 tags: [agent-browser, cli, testing, integration, automation, vercel]
 date: 2026-03-24
-status: draft
+status: done
 ---
 
 # Configurar CLI: Agent Browser de Vercel
@@ -60,4 +60,9 @@ Agent Browser acerca la **automatización de navegador** al mundo de los agentes
 
 ## Notas Personales
 
-<!-- Observaciones propias, conexiones con otros temas, ideas. -->
+La práctica de la clase combinó **instalar** el CLI, **explorar** sus subcomandos desde la terminal con el agente y **fijar** el conocimiento en un skill del repo para no redescubrir la herramienta en cada tarea —alineado con lo que ya dice el marco conceptual sobre skills contextualizados.
+
+**Instalación de agent-browser.** Es un binario independiente (Rust + daemon); la vía habitual es **`npm install -g agent-browser`** (también **Homebrew** o **cargo install**, según el entorno). La primera vez hace falta **`agent-browser install`**, que descarga **Chrome for Testing** usado por el daemon. En Linux, **`agent-browser install --with-deps`** puede traer dependencias de sistema; si APT falla, en el `twitter-clon` existe el script de apoyo `projects/twitter-clon/scripts/fix-agent-browser-system-deps.sh` (p. ej. Ubuntu 24.04). Documentación y repositorio upstream: [vercel-labs/agent-browser](https://github.com/vercel-labs/agent-browser).
+
+**Exploración con Cursor y creación del skill.** Se pidió a **Cursor en modo agente** (flujo automático con terminal) que recorriera el CLI: `agent-browser --help`, subcomandos principales (`open`, `wait`, `snapshot`, `click`, `screenshot`, etc.) y el patrón **refs** (`snapshot` → acciones con `@eN`). Con eso armamos el skill **`executing-browser`**, que vive en [`projects/twitter-clon/.cursor/skills/executing-browser/SKILL.md`](../projects/twitter-clon/.cursor/skills/executing-browser/SKILL.md): resume el flujo recomendado para agentes, timeouts, JSON y buenas prácticas sin repetir todo el README upstream en cada sesión.
+
