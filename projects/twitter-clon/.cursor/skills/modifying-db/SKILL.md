@@ -17,7 +17,7 @@ Procedimiento para cambios de esquema con el CLI de Supabase. **Directorio de tr
 **No ejecutar** `migration new` en modo interactivo (esperar prompts en terminal). En agentes, CI o scripts usar siempre **`--yes`** para que el CLI no quede bloqueado.
 
 ```bash
-cd /home/johny/dev/personal/10xbuilders-garden/projects/twitter-clon
+# Desde la raíz del proyecto twitter-clon
 npx supabase migration new nombre_descriptivo_snake_case --yes
 ```
 

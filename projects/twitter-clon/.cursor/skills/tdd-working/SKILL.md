@@ -1,7 +1,7 @@
 ---
 name: tdd-working
 description: Guides Test-Driven Development (TDD) using Red-Green-Refactor with Jest. Requires acceptance criteria first, then test cases, then one Red-Green-Refactor cycle per case; production code is never written without a failing test first. Use when the user wants TDD, test-driven development, Red-Green-Refactor, or when implementing features with Jest and npm test.
-npm---
+---
 
 # TDD Working (Red-Green-Refactor)
 

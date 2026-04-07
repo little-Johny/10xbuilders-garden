@@ -14,6 +14,7 @@ npm install -g agent-browser   # o: brew / cargo install
 agent-browser install          # descarga Chrome (Chrome for Testing), primera vez
 ```
 
+- **macOS:** `agent-browser install` suele bastar; Chrome for Testing se descarga sin dependencias extra.
 - **Linux:** `agent-browser install --with-deps` instala dependencias de sistema; si APT falla (repos rotos o nombres de paquetes), en este repo existe `scripts/fix-agent-browser-system-deps.sh` (Ubuntu 24.04 Noble).
 
 ## Flujo recomendado para agentes (refs)
@@ -142,7 +143,7 @@ No copiar `SKILL.md` desde `node_modules` a mano (queda obsoleto). Este skill **
 
 ## Resumen operativo
 
-1. Instalar Chrome: `agent-browser install` (y deps en Linux si aplica).
+1. Instalar Chrome: `agent-browser install` (en macOS sin flags extra; en Linux `--with-deps` si aplica).
 2. Bucle: **open → wait si hace falta → snapshot (-i) → actuar con @refs → re-snapshot si cambió la UI**.
 3. Scripts/agentes: preferir **`--json`**.
 4. Evidencia visual: **`screenshot <ruta>`** (`--full`, `--annotate`); `snapshot` no sustituye capturas.
