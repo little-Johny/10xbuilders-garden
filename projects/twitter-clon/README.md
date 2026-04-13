@@ -136,14 +136,14 @@ twitter-clon/
 ├── package.json          # Scripts raíz (dev, test, install:all, supabase:gen)
 ├── app/                  # Frontend React + Vite + Tailwind
 │   ├── src/
-│   │   ├── components/   # Componentes reutilizables (App, Avatar, BrandLogo)
+│   │   ├── components/   # Componentes reutilizables (App, Avatar, BrandLogo, TweetCard, CommentCard, CommentSection)
 │   │   ├── contexts/     # AuthContext — gestión de sesión global
 │   │   └── pages/        # Páginas: FeedPage, LoginPage, RegisterPage, ProfilePage
 │   └── test/             # Tests Jest (setupTests.js + *.test.jsx)
 ├── api/                  # Backend Express
 │   └── src/
-│       ├── routes/       # auth.routes, tweets.routes, profiles.routes
-│       ├── services/     # auth.service, tweet.service, profile.service
+│       ├── routes/       # auth.routes, tweets.routes, profiles.routes, comments.routes
+│       ├── services/     # auth.service, tweet.service, tweetLike.service, profile.service, comment.service, commentLike.service
 │       └── lib/          # supabase.js, bearer.js, upload.js, validation.js
 ├── supabase/
 │   ├── config.toml
@@ -170,6 +170,10 @@ twitter-clon/
 | `POST` | `/auth/login` | — | Login; devuelve sesión con tokens |
 | `GET` | `/tweets` | — | Lista pública de todos los tweets |
 | `POST` | `/tweets` | Bearer | Crear un tweet |
+| `POST` | `/tweets/:tweetId/like` | Bearer | Toggle like en un tweet |
+| `GET` | `/tweets/:tweetId/comments` | — | Lista de comentarios de un tweet |
+| `POST` | `/tweets/:tweetId/comments` | Bearer | Crear un comentario en un tweet |
+| `POST` | `/tweets/:tweetId/comments/:commentId/like` | Bearer | Toggle like en un comentario |
 | `GET` | `/profiles/me` | Bearer | Perfil propio |
 | `PATCH` | `/profiles/me` | Bearer | Actualizar bio/display_name |
 | `POST` | `/profiles/me/avatar` | Bearer | Subir avatar (multipart/form-data) |
@@ -196,4 +200,4 @@ El bucket de Storage `avatars` es público en lectura; cada usuario solo puede g
 - [Mapa de aprendizaje](docs/LEARNING_MAP.md)
 
 ---
-*Última actualización: 2026-04-04*
+*Última actualización: 2026-04-12*
