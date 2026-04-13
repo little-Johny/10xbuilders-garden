@@ -10,7 +10,7 @@
 | Tipo | `Skill` |
 | Ubicación canónica | `ia-tools/skills/commit-organizer/SKILL.md` |
 | Plataformas | Claude Code (`.claude/skills/`) · Cursor (`.cursor/skills/`) via symlinks |
-| Estado | `En progreso` |
+| Estado | `Ready` |
 
 ---
 
@@ -82,7 +82,7 @@ ia-tools/skills/commit-organizer/
 
 - Crear branches, abrir PRs o hacer push al remoto
 - Resolver conflictos de merge
-- Generar o actualizar documentación (responsabilidad del agente `repo-docs-manager`)
+- Generar o actualizar documentación (responsabilidad del agente `candace`)
 - Ejecutar linters o tests antes de commitear
 - Configurar hooks de pre-commit o GitHub Actions (Fase 2-3)
 - Modificar configuración de Git (`.gitconfig`, `.gitignore`)
@@ -113,7 +113,7 @@ ia-tools/skills/commit-organizer/
 [Reporta resultado final]
 ```
 
-> **Fase futura:** cuando exista el agente `repo-docs-manager`, este skill podrá invocarlo automáticamente tras los commits para evaluar si se requiere actualización de documentación.
+> Tras los commits, este skill evalúa si los cambios ameritan actualización de documentación y, de ser así, propone al usuario invocar al agente `candace`. Ver paso 7 del SKILL.md para los criterios y el flujo completo.
 
 ### Output esperado
 

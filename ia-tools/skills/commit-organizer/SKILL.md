@@ -108,6 +108,27 @@ Esperar la respuesta del usuario:
 
 Mostrar un resumen de los commits realizados con sus hashes.
 
+### 7. Invocación del agente de documentación (candace)
+
+Tras reportar los commits, evaluar si los cambios commiteados podrían requerir actualización de documentación. Aplicar estos criterios:
+
+- Se crearon o eliminaron directorios/archivos significativos (no solo ediciones menores)
+- Se modificaron archivos fuera de `docs/` o `week-XX/` (cambios en proyectos, ia-tools, estructura)
+- Se añadieron nuevas features, tools o configuraciones
+- El `README.md` raíz quedó desactualizado respecto a la estructura real del repo
+
+Si al menos un criterio se cumple:
+
+1. Informar al usuario: *"Los cambios commiteados podrían requerir actualización de documentación. ¿Invocar al agente candace para evaluarlo?"*
+2. Si el usuario acepta → invocar a candace incluyendo en el prompt de invocación:
+   - La frase literal: `"Invocación automática desde commit-organizer"` (candace la usa para detectar el modo automático y no re-invocar este skill al terminar)
+   - El reporte de commits realizados (tabla con hashes, mensajes y archivos afectados)
+3. Si el usuario rechaza → terminar normalmente
+
+Si ningún criterio se cumple, terminar sin proponer la invocación.
+
+> **Importante:** cuando candace es invocada desde este skill, candace NO re-invoca a commit-organizer al terminar — los archivos de documentación generados quedan pendientes de commit para evitar un loop circular.
+
 ## Reglas de Conventional Commits
 
 - Formato estricto: `type(scope): descripción`
