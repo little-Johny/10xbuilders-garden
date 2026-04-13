@@ -2,7 +2,7 @@
 
 ## 1. Título de la tarea
 
-Fortalecer y documentar un agente didáctico en español que responda preguntas de forma clara y pueda apoyarse en herramientas simples para calcular y consultar la hora actual.
+Fortalecer y documentar un agente didáctico en español que responda preguntas de forma clara y pueda apoyarse en herramientas para calcular, consultar la hora actual y buscar vuelos.
 
 ---
 
@@ -41,7 +41,7 @@ La solución está dividida en capas claras para que cada parte tenga una respon
 - Una capa de entrada recibe la pregunta del usuario.
 - Una capa de ejecución coordina el proceso de respuesta.
 - Una capa de composición arma el agente con su modelo, prompt y herramientas.
-- Una capa de capacidades concentra las herramientas del dominio (cálculo y hora).
+- Una capa de capacidades concentra las herramientas del dominio (cálculo, hora y vuelos vía SerpApi).
 - Una capa de configuración centraliza y valida variables de entorno.
 
 Este enfoque permite:
@@ -59,7 +59,8 @@ Tipos de solicitudes contempladas hoy:
 
 - Preguntas que requieren operaciones matemáticas sencillas.
 - Preguntas sobre la hora actual.
-- Preguntas mixtas que combinan ambos tipos.
+- Preguntas sobre vuelos y viajes (búsqueda vía SerpApi/Google Flights).
+- Preguntas mixtas que combinan varios tipos.
 
 Resultado esperado para el usuario:
 

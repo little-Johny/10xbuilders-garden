@@ -10,6 +10,7 @@ This project implements an agent with LangChain tools using a modular structure 
 4. The agent selects and executes the appropriate tool based on the prompt:
    - `calculator`
    - `current_time`
+   - `flights`
 5. `AgentExecutor` returns the final `output` to the caller.
 
 ## Module responsibilities
@@ -38,5 +39,5 @@ This project implements an agent with LangChain tools using a modular structure 
 ## Recommended evolution
 
 - Replace `Function(...)` in `calculator` with a safe parser/evaluator for production.
-- Add new tools under `src/agent/tools` and register them in `createAgent.ts`.
 - Add structured logging when deeper runtime diagnostics are required.
+- To add new tools: create the file under `src/agent/tools/`, register it in `createAgent.ts`, and update `prompt.ts` with usage instructions. See `flights.ts` as reference for tools that call external APIs.

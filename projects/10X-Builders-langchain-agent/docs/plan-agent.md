@@ -36,10 +36,11 @@ Este plan traduce el brief en pasos ejecutables para que cualquier integrante de
 
 ### No incluye (por ahora)
 
-- Integraciones externas adicionales.
 - Interfaz web.
 - Orquestación multiagente.
 - Herramientas complejas no justificadas por el objetivo educativo.
+
+> **Nota:** tras la redacción original de este plan, se incorporó el tool de vuelos (`flights`) que consulta SerpApi/Google Flights. Ver `docs/brief-flights-tool.md` para el diseño completo. La restricción "integraciones externas adicionales" ya no aplica.
 
 ---
 

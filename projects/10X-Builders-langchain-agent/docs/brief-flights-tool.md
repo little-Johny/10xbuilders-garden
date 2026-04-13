@@ -11,7 +11,7 @@ Agregar un tool al agente didáctico para buscar vuelos usando la API de Google 
 | Fecha | `08-04-2026` |
 | Tipo | `Tool` |
 | Stack principal | TypeScript, `fetch` nativo, SerpApi (`engine=google_flights`) |
-| Estado | `Draft` |
+| Estado | `Done` |
 
 ---
 
