@@ -4,7 +4,7 @@ week: 3
 lesson: 3
 tags: [langchain, langgraph, langsmith, deep-agents, llm, agentes, frameworks, ciclo de vida, producción, observabilidad]
 date: 2026-04-06
-status: draft
+status: done
 ---
 
 # Introducción a LangChain y agentes de IA
@@ -107,3 +107,26 @@ LangChain da el **marco** para que un LLM deje de ser un generador de texto aisl
 ## Notas personales
 
 <!-- Observaciones propias, conexiones con otros temas, ideas. -->
+
+En clase clonamos el repo [`10X-Builders-langchain-agent`](../projects/10X-Builders-langchain-agent/) de GitHub como base de un agente LangChain ya armado — no arrancamos de cero, sino que estudiamos cómo estaba ensamblado. Después, por cuenta propia, agregué el tool de vuelos (`flights.ts`) que conecta el agente a la API de Google Flights vía SerpApi. Fue la primera vez que registré un tool real desde cero. Me ayudó a entender de golpe cómo el agente "sabe" qué puede hacer.
+
+### Cómo se ensambla el agente con LangChain
+
+```ts
+const agent = await createToolCallingAgent({ llm: model, tools: agentTools, prompt: agentPrompt });
+return new AgentExecutor({ agent, tools: agentTools, verbose });
+```
+
+`createToolCallingAgent` une el modelo, los tools disponibles y el prompt en una unidad que ya sabe cuándo y cómo llamar a cada herramienta. `AgentExecutor` es el runtime que le pone el bucle encima: llama al agente, ejecuta el tool que eligió, pasa el resultado de vuelta y repite hasta tener una respuesta final. El flag `verbose` es puro debug — muestra cada paso del bucle en consola.
+
+### Cómo se usa Zod para definir el contrato del tool
+
+```ts
+const flightsSchema = z.object({
+  origin: z.string().describe("Código IATA del aeropuerto de origen (ej: BOG, MIA, JFK)..."),
+  departureDate: z.string().optional().describe("Fecha en YYYY-MM-DD..."),
+  adults: z.number().optional().default(1),
+});
+```
+
+Zod es una librería de validación de esquemas en TypeScript. LangChain la usa para que el modelo entienda exactamente qué parámetros acepta cada tool, cuáles son opcionales y de qué tipo son. El `.describe()` es lo que termina inyectado en el prompt del modelo — sin eso, el LLM no sabría que `origin` espera un código IATA y podría mandar cualquier cosa.
