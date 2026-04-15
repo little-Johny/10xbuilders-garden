@@ -44,7 +44,7 @@ Antes de proponer nada, ejecuta esta exploración:
 Con la información del análisis, identifica qué necesita documentación o actualización. Aplica este orden de prioridad:
 
 1. `README.md` raíz — siempre verificar si necesita actualización
-2. READMEs de directorios sin documentación (ej: `week-XX/` sin README, `ia-tools/` sin README)
+2. READMEs de directorios sin documentación (ej: `ia-tools/` sin README) — **nunca crear READMEs en directorios `week-XX/`**, las lecciones son suficiente índice
 3. Actualización de READMEs existentes que quedaron desalineados
 4. Índices, resúmenes u otros documentos que aporten valor de navegación
 
@@ -119,9 +119,8 @@ Propuesta de documentación (N archivos):
 
 | # | Acción      | Archivo                  | Descripción                                          |
 |---|-------------|--------------------------|------------------------------------------------------|
-| 1 | Crear       | week-03/README.md        | Índice de lecciones de la semana 3 con descripciones |
-| 2 | Actualizar  | README.md                | Sincronizar árbol de carpetas y descripción general  |
-| 3 | Delegado    | projects/twitter-clon/   | Delegado al sub-agente project-documenter            |
+| 1 | Actualizar  | README.md                | Sincronizar árbol de carpetas y descripción general  |
+| 2 | Delegado    | projects/twitter-clon/   | Delegado al sub-agente project-documenter            |
 
 Preview de contenido:
 
