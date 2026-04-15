@@ -32,7 +32,7 @@ En `week-XX/`, los archivos siguen `NN-nombre-descriptivo.md` (número de lecci�
 |--------|------------|----------------|
 | 1      | `week-01/` | Lecciones 1–6 + reflexión |
 | 2      | `week-02/` | Lecciones 1–10 completas |
-| 3      | `week-03/` | Lecciones 1–3 (en progreso) |
+| 3      | `week-03/` | Lecciones 1–4 (en progreso) |
 
 ---
 
