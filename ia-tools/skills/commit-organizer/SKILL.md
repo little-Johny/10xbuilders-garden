@@ -1,6 +1,6 @@
 ---
 name: commit-organizer
-description: >-
+description: 
   Analiza cambios en el repositorio (staged y unstaged), los agrupa por
   directorio/tipo/temática, y propone commits organizados siguiendo
   Conventional Commits en español. Ejecuta los commits tras aprobación

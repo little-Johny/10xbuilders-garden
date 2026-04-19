@@ -6,7 +6,7 @@
 
 | Campo | Valor |
 |---|---|
-| Fecha | `11-04-2026` |
+| Fecha | `19-04-2026` |
 | Tipo | `Agente` |
 | Modelo | `claude-sonnet-4-6` |
 | Invocación | `Ambas` |
@@ -20,12 +20,12 @@
 
 ### ¿Qué existe hoy?
 
-Un repositorio (`10xbuilders-garden`) que almacena todo el material de un curso de desarrollo con IA: lecciones semanales, proyectos prácticos, herramientas de IA (skills, agentes, briefs) y documentación general. Actualmente hay **3 semanas de lecciones**, **2 proyectos** y un ecosistema creciente de herramientas en `ia-tools/`.
+Un repositorio (`10xbuilders-garden`) que almacena todo el material de un curso de desarrollo con IA: lecciones semanales, proyectos prácticos, herramientas de IA (skills, agentes, briefs) y documentación general. Actualmente hay **4 semanas de lecciones**, **2 proyectos** y un ecosistema creciente de herramientas en `ia-tools/`.
 
 En cuanto a documentación:
 - Existe un `README.md` raíz pero se desactualiza cada vez que se añaden semanas, proyectos o herramientas nuevas.
 - Los proyectos en `projects/` tienen sus propios READMEs pero con niveles de detalle inconsistentes.
-- Los directorios `week-XX/` no tienen README ni índice — solo archivos `.md` sueltos sin contexto de navegación.
+- Los directorios `week-XX/` no tienen README ni índice — solo archivos `.md` sueltos.
 - `ia-tools/` no tiene documentación que explique qué skills y agentes existen ni cómo usarlos.
 - No hay un proceso que detecte cuándo la documentación queda desalineada con los cambios reales del repo.
 
@@ -96,6 +96,22 @@ ia-tools/agents/candace.md        ← fuente de verdad
 .cursor/agents/candace.md         → symlink (Cursor lo descubre aquí)
 ```
 
+### Interactividad cross-entorno
+
+Candace requiere interacción con el usuario en varios puntos de su flujo (preguntas de delegación, aprobación de propuesta, ajustes). Las plataformas manejan esta interactividad de forma distinta:
+
+| Plataforma | Mecanismo de interactividad | Comportamiento |
+|---|---|---|
+| **Claude Code** | `ask_user` — tool disponible dentro del sub-agente | El sub-agente pausa su ejecución, pregunta al usuario, recibe la respuesta y continúa en la misma invocación |
+| **Cursor** | `AskQuestion` (padre) + `resume` (Task tool) | El sub-agente no tiene acceso directo al usuario. Retorna su output al agente padre, quien pregunta al usuario y reanuda al sub-agente con la respuesta |
+
+**Estrategia elegida: ejecución por fases explícitas.** El flujo de candace se divide en fases con puntos de corte bien definidos donde se requiere input del usuario. Cada fase produce un output estructurado y consume el input de la fase anterior. Este diseño permite que:
+
+- En **Claude Code**: las fases se ejecutan secuencialmente dentro de una misma invocación, usando `ask_user` en cada punto de corte.
+- En **Cursor**: cada punto de corte se traduce en un retorno del sub-agente → el padre pregunta con `AskQuestion` → el padre reanuda con `resume` pasando las decisiones del usuario.
+
+El archivo `.md` del agente es idéntico para ambas plataformas. La diferencia la resuelve el runtime de cada entorno, no las instrucciones del agente.
+
 ### Interconexión con otros agentes y skills
 
 **candace → commit-organizer (dirección: candace invoca al skill):**
@@ -154,7 +170,19 @@ Cuando candace necesita documentar cualquier directorio del repo, primero verifi
 
 ## 3. Flujo
 
+### Protocolo de interactividad por fases
+
+El flujo de candace se estructura en fases con **puntos de corte** donde se requiere input del usuario. Cada fase es autónoma: produce un output estructurado completo y consume el input de la fase anterior.
+
+**Regla general para puntos de corte:** cuando candace llega a un punto donde necesita una decisión del usuario, aplica esta lógica:
+1. Si tiene acceso a un tool de interacción directa con el usuario (ej: `ask_user` en Claude Code) → lo usa y continúa en la misma ejecución.
+2. Si **no** tiene acceso → retorna su output estructurado como resultado final, indicando explícitamente qué decisiones necesita para continuar. El agente padre (o el usuario) lo reanudará con las respuestas.
+
+Este mecanismo se aplica a todos los puntos de corte del flujo, tanto en invocación manual como automática.
+
 ### Invocación manual
+
+#### Fase 1 — Análisis y propuesta (autónoma)
 
 ```
 [Usuario invoca a candace directamente]
@@ -166,25 +194,44 @@ Cuando candace necesita documentar cualquier directorio del repo, primero verifi
 [3. Por cada directorio que necesita docs:]
    [¿Tiene sub-agente propio en .cursor/agents/ o .claude/agents/?]
       ↓ Sí                              ↓ No
-   [Informa al usuario:              [Genera/actualiza docs
-    "Encontré el agente X para        directamente]
-     este directorio. ¿Delegar
-     a él o que yo lo haga?"]
-      ↓ Delegar           ↓ Candace
-   [Marca directorio   [Genera docs
-    como "Delegado"]    directamente]
+   [Registra sub-agente encontrado   [Marca directorio para
+    y genera pregunta de delegación    documentación directa]
+    para el usuario]
         ↓
-[4. Propone documentos al usuario con preview del contenido]
-    (incluye filas "Delegado" para visibilidad)
-        ↓                             ↑
-   ┌────┴──────────┐                  │
-[Aprueba]  [Ajustar] ────────────────┘    [Cancelar] → Aborta sin escribir nada
-   ↓
-[5a. Escribe los archivos .md directos aprobados]
-[5b. Invoca al sub-agente para cada directorio marcado como "Delegado"]
-        ↓
-[6. Invoca commit-organizer para commitear la documentación]
+[4. Genera propuesta completa con preview del contenido]
+    (incluye filas "Delegado — pendiente de decisión" para cada
+     directorio con sub-agente encontrado)
 ```
+
+**Output de Fase 1** — el agente produce un bloque estructurado con:
+- Tabla de propuesta (archivos a crear/actualizar/delegar)
+- Preview del contenido propuesto para cada archivo directo
+- Preguntas de delegación: por cada sub-agente encontrado, la pregunta "¿Delegar a `[nombre]` o que candace documente directamente?"
+- Pregunta de aprobación: "¿Aprobar esta propuesta? (aprobar / ajustar / cancelar)"
+
+**⇨ Punto de corte — requiere input del usuario:**
+- Decisiones de delegación (por directorio: delegar o candace)
+- Aprobación general (aprobar / ajustar / cancelar)
+
+#### Fase 2 — Ejecución (requiere input de Fase 1)
+
+```
+[Recibe decisiones del usuario]
+        ↓
+   ┌────┴──────────────────┐
+[Cancelar]              [Ajustar]                    [Aprobar]
+   ↓                       ↓                            ↓
+[Aborta sin           [Aplica ajustes y            [5a. Escribe los archivos
+ escribir nada]        regenera propuesta              .md directos aprobados]
+                       → vuelve a Punto de corte]   [5b. Invoca al sub-agente
+                                                        por cada directorio
+                                                        marcado como "Delegado"]
+                                                        ↓
+                                                    [6. Invoca commit-organizer
+                                                        para commitear]
+```
+
+**Nota sobre "ajustar":** si el usuario pide ajustes, candace regenera la propuesta con las modificaciones y vuelve al punto de corte. Esto puede significar múltiples ciclos de ida y vuelta antes de la aprobación final.
 
 ### Invocación automática (desde commit-organizer)
 
@@ -203,12 +250,21 @@ Cuando candace necesita documentar cualquier directorio del repo, primero verifi
    - ¿Se añadieron features/tools/skills sin documentación asociada?
         ↓
    ↓ No amerita                       ↓ Sí amerita
-[Informa al usuario que         [Continúa con el flujo manual desde
- no se requiere documentación    el paso 2, PERO al terminar de
+[Informa al usuario que         [Continúa con Fase 1 → Punto de corte
+ no se requiere documentación    → Fase 2, PERO al terminar de
  y termina]                      escribir NO invoca commit-organizer
                                  (los .md quedan pendientes de commit
                                   para que el usuario decida)]
 ```
+
+### Comportamiento del punto de corte por entorno
+
+| Entorno | Qué sucede en el punto de corte |
+|---|---|
+| **Claude Code** | Candace usa `ask_user` para presentar la propuesta y las preguntas. Recibe las respuestas inline y continúa a Fase 2 sin interrumpir la ejecución. |
+| **Cursor** | Candace retorna el output de Fase 1 como su resultado final. El agente padre recibe este output, presenta las preguntas al usuario (via `AskQuestion` u otro mecanismo), y reanuda a candace (via `resume`) pasándole las decisiones del usuario como mensaje de seguimiento. Candace retoma desde Fase 2. |
+
+En ambos casos, las instrucciones del agente son las mismas. Candace no necesita saber en qué entorno está — simplemente intenta usar el tool de interacción directa si está disponible, y si no, retorna con su output estructurado.
 
 ### Manejo de errores
 
@@ -281,6 +337,15 @@ Preview de contenido:
 - El `README.md` raíz es el documento de mayor prioridad — siempre verificar si necesita actualización
 - Orden de prioridad: README raíz > READMEs de directorios sin documentación > actualización de READMEs existentes > índices y resúmenes
 
+**Interactividad cross-entorno (ejecución por fases):**
+- El flujo se divide en fases con puntos de corte explícitos donde se requiere input del usuario
+- Fase 1 (análisis y propuesta) siempre se ejecuta de forma autónoma y produce un output estructurado completo
+- Fase 2 (ejecución) solo arranca tras recibir las decisiones del usuario sobre delegación y aprobación
+- En cada punto de corte, candace intenta usar un tool de interacción directa (ej: `ask_user`). Si no está disponible, retorna su output estructurado como resultado final para ser reanudada con las respuestas
+- El output del punto de corte debe ser autocontenido: incluir toda la información necesaria para que un agente padre o el usuario puedan tomar las decisiones sin contexto adicional
+- El agente no debe asumir en qué entorno se ejecuta — la presencia o ausencia del tool de interacción directa es el único indicador
+- Los ciclos de "ajustar" (usuario pide cambios a la propuesta) repiten el punto de corte tantas veces como sea necesario antes de pasar a Fase 2
+
 ---
 
 ## 5. Riesgos & Supuestos
@@ -293,6 +358,8 @@ Preview de contenido:
 | 4 | Templates en `docs/` cambian o se agregan nuevos sin que candace lo sepa | Baja | Candace lee `docs/` en cada invocación para descubrir templates disponibles dinámicamente |
 | 5 | Documentación generada es superficial o placeholder sin valor real | Media | Constraint de calidad: no generar documentos vacíos o con solo títulos. Todo archivo generado debe tener contenido útil y navegable |
 | 6 | Candace genera documentación redundante con lo que ya produjo un sub-agente delegado | Baja | Tras delegar, candace no genera documentación adicional para ese directorio. Si el sub-agente ya actualizó archivos, candace los respeta sin sobreescribir |
+| 7 | Pérdida de contexto en reanudación (Cursor): al retornar y ser reanudada via `resume`, candace podría perder estado interno de Fase 1 | Media | El output del punto de corte es autocontenido — incluye toda la propuesta, preguntas y contexto necesario. Al ser reanudada, candace reconstruye el estado a partir de las decisiones del usuario y su propio output previo |
+| 8 | El agente padre en Cursor no interpreta correctamente el output estructurado del punto de corte | Media | Documentar el formato exacto del output del punto de corte para que el agente padre (o el usuario) sepa qué decisiones pasar al reanudar. Formato predecible con secciones marcadas |
 
 ---
 
@@ -324,6 +391,14 @@ Preview de contenido:
 **Orquestación:**
 - [ ] Invoca `commit-organizer` tras escribir los archivos aprobados (solo en invocación manual)
 - [ ] NO re-invoca `commit-organizer` cuando fue invocada automáticamente (sin loop circular)
+
+**Interactividad cross-entorno:**
+- [ ] Fase 1 se ejecuta de forma autónoma y produce un output estructurado completo (propuesta + preguntas)
+- [ ] El output del punto de corte es autocontenido — no requiere contexto externo para tomar decisiones
+- [ ] En Claude Code: candace usa `ask_user` en el punto de corte y continúa a Fase 2 sin interrupción
+- [ ] En Cursor: candace retorna el output de Fase 1, es reanudada con las decisiones, y ejecuta Fase 2 correctamente
+- [ ] Los ciclos de "ajustar" funcionan en ambos entornos (múltiples ida y vuelta antes de aprobación)
+- [ ] El archivo `.md` del agente es idéntico para ambas plataformas — sin lógica condicional por entorno
 
 **Calidad:**
 - [ ] Produce solo archivos `.md`
