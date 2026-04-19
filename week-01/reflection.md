@@ -2,7 +2,7 @@
 title: "Aprendizajes — primera semana (10x Builders)"
 week: 1
 lesson: 0
-tags: [reflexión, semana-1]
+tags: [reflection, week-1]
 date: 2026-03-17
 status: done
 ---
