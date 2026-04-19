@@ -12,6 +12,7 @@ Repositorio personal de apuntes, conceptos, entregables y herramientas del curso
 ├── week-01/           # Semana 1 — Fundamentos del loop de ingeniería híbrida
 ├── week-02/           # Semana 2 — Reglas, skills, MCPs y subagentes
 ├── week-03/           # Semana 3 — Agentes autónomos y LangChain
+├── week-04/           # Semana 4 — Arquitectura de agente multicanal con Turborepo y LangGraph
 ├── ia-tools/          # Agentes, skills y artefactos de planificación transversales
 ├── projects/          # Código de práctica y laboratorios
 ├── .claude/           # Agentes y skills para Claude Code (mirrors de ia-tools/)
@@ -31,8 +32,9 @@ En `week-XX/`, los archivos siguen `NN-nombre-descriptivo.md` (número de lecci�
 | Semana | Carpeta    | Estado (notas) |
 |--------|------------|----------------|
 | 1      | `week-01/` | Lecciones 1–6 + reflexión |
-| 2      | `week-02/` | Lecciones 1–10 completas |
-| 3      | `week-03/` | Lecciones 1–4 (en progreso) |
+| 2      | `week-02/` | Lecciones 1–10 + reflexión |
+| 3      | `week-03/` | Lecciones 1–5 + reflexión |
+| 4      | `week-04/` | Lección 1 (borrador, en progreso) |
 
 ---
 
@@ -42,6 +44,7 @@ En `week-XX/`, los archivos siguen `NN-nombre-descriptivo.md` (número de lecci�
 |-----------------------------------|-----------------------------------------------------------------------------|-------------|
 | Twitter Clon (práctica Lab10)     | [`projects/twitter-clon/`](projects/twitter-clon/)                          | Clon de X con React, Express y Supabase |
 | LangChain Agent                   | [`projects/10X-Builders-langchain-agent/`](projects/10X-Builders-langchain-agent/) | Agente conversacional con LangChain y herramientas |
+| Gym Tracker Agent (entregable week-04) | [`projects/gym-tracker-agent/`](projects/gym-tracker-agent/) | Agente de seguimiento de entrenamientos por Telegram con LangChain y Google Sheets |
 
 ---
 
