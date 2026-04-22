@@ -1,0 +1,45 @@
+{
+  "name": "aisaac",
+  "version": "0.1.0",
+  "description": "CLI gym progress tracking agent powered by LangChain JS, OpenRouter and Google Sheets.",
+  "private": true,
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "keywords": [
+    "langchain",
+    "openrouter",
+    "google-sheets",
+    "agent",
+    "gym",
+    "tracker"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@langchain/core": "^0.3.48",
+    "@langchain/openai": "^0.5.18",
+    "dotenv": "^16.4.5",
+    "googleapis": "^144.0.0",
+    "langchain": "^0.3.30",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.17.0",
+    "@types/node": "^22.10.2",
+    "eslint": "^9.17.0",
+    "typescript": "^5.7.2",
+    "typescript-eslint": "^8.18.1",
+    "vitest": "^2.1.8"
+  }
+}
