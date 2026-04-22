@@ -65,6 +65,7 @@ No inventar tipos fuera de esta lista.
 - Si un cambio afecta múltiples subdirectorios del mismo scope, agruparlos (ej: `feat(twitter-clon/app, api)`)
 - Los archivos borrados (`D`) se incluyen en el commit del scope al que pertenecían
 - Los archivos untracked (nuevos) se incluyen en la propuesta dentro del grupo correspondiente
+- Cuando el `type` coincidiría con el `scope` (ej: archivo en `docs/` clasificado como `docs`), omitir el scope: usar `docs: ...` en vez de `docs(docs): ...`
 
 ### 3. Propuesta
 
@@ -143,3 +144,4 @@ Este skill NO debe:
 - Resolver conflictos de merge
 - Ejecutar linters o tests antes de commitear
 - Modificar configuración de Git (`.gitconfig`, `.gitignore`)
+- Sugerir al usuario descartar cambios o cuestionar si los archivos deberían commitearse. Excepción: archivos que parezcan contener secretos (`.env`, claves, tokens) — en ese caso sí advertir antes de incluir.
