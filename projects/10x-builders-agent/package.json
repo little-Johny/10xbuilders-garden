@@ -1,0 +1,31 @@
+{
+  "name": "agents",
+  "private": true,
+  "packageManager": "npm@11.6.2",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "type-check": "turbo run type-check"
+  },
+  "devDependencies": {
+    "turbo": "^2"
+  },
+  "overrides": {
+    "langsmith": "^0.5.0"
+  },
+  "author": {
+    "name": "GNDX"
+  },
+  "contributors": [
+    {
+      "name": "Oscar Barajas @gndx",
+      "email": "oscar@gndx.dev",
+      "url": "https://lab10.ai"
+    }
+  ]
+}

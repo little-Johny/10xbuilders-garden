@@ -1,0 +1,5 @@
+{
+  "name": "@agents/config",
+  "private": true,
+  "files": ["tsconfig.base.json", "tsconfig.next.json"]
+}

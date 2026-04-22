@@ -1,0 +1,50 @@
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+import { SettingsForm } from "./settings-form";
+
+export default async function SettingsPage() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", user.id)
+    .single();
+
+  const { data: toolSettings } = await supabase
+    .from("user_tool_settings")
+    .select("*")
+    .eq("user_id", user.id);
+
+  const { data: telegramAccount } = await supabase
+    .from("telegram_accounts")
+    .select("*")
+    .eq("user_id", user.id)
+    .single();
+
+  return (
+    <div className="min-h-screen">
+      <header className="border-b border-neutral-200 px-4 py-3 dark:border-neutral-800">
+        <div className="mx-auto flex max-w-2xl items-center justify-between">
+          <h1 className="text-lg font-semibold">Ajustes</h1>
+          <a
+            href="/chat"
+            className="rounded-md border border-neutral-300 px-3 py-1.5 text-xs font-medium hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
+          >
+            Volver al chat
+          </a>
+        </div>
+      </header>
+      <main className="mx-auto max-w-2xl px-4 py-8">
+        <SettingsForm
+          userId={user.id}
+          profile={profile}
+          toolSettings={toolSettings ?? []}
+          telegramLinked={!!telegramAccount}
+        />
+      </main>
+    </div>
+  );
+}
