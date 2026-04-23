@@ -4,7 +4,7 @@ week: 4
 lesson: 1
 tags: [monorepo, turborepo, nextjs, langgraph, langchain, supabase, typescript, open-router, gpt-4o, arquitectura, multicanal]
 date: 2026-04-18
-status: draft
+status: done
 ---
 
 # Arquitectura de un agente inteligente multicanal
@@ -92,7 +92,3 @@ La arquitectura de este agente multicanal está diseñada para que cada pieza te
 3. ¿Qué diferencia práctica existe entre definir el flujo del agente con LangGraph.js en lugar de con una cadena simple de LangChain?
 4. ¿Por qué las políticas RLS de Supabase son una solución de seguridad más robusta que filtrar por `userId` en el código de la aplicación?
 5. ¿Qué ventaja aporta usar Open Router como intermediario frente a integrar directamente el SDK de un proveedor de modelo?
-
-## Notas personales
-
-<!-- Observaciones propias, conexiones con otros temas, ideas. -->
