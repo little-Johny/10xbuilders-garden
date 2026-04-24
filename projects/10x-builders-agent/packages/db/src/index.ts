@@ -1,4 +1,5 @@
 export { createServerClient, createBrowserClient, type DbClient } from "./client";
+export { encryptSecret, decryptSecret } from "./crypto";
 export * from "./queries/profiles";
 export * from "./queries/sessions";
 export * from "./queries/messages";

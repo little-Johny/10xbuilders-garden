@@ -20,7 +20,10 @@ export interface UserIntegration {
   provider: string;
   scopes: string[];
   status: "active" | "revoked" | "expired";
+  provider_account_id?: string | null;
+  provider_account_login?: string | null;
   created_at: string;
+  updated_at?: string;
 }
 
 export interface UserToolSetting {
