@@ -34,7 +34,7 @@ En `week-XX/`, los archivos siguen `NN-nombre-descriptivo.md` (número de lecci�
 | 1      | `week-01/` | Lecciones 1–6 + reflexión |
 | 2      | `week-02/` | Lecciones 1–10 + reflexión |
 | 3      | `week-03/` | Lecciones 1–5 + reflexión |
-| 4      | `week-04/` | Lección 1 (borrador, en progreso) |
+| 4      | `week-04/` | Lecciones 1–4 |
 
 ---
 
@@ -44,7 +44,8 @@ En `week-XX/`, los archivos siguen `NN-nombre-descriptivo.md` (número de lecci�
 |-----------------------------------|-----------------------------------------------------------------------------|-------------|
 | Twitter Clon (práctica Lab10)     | [`projects/twitter-clon/`](projects/twitter-clon/)                          | Clon de X con React, Express y Supabase |
 | LangChain Agent                   | [`projects/10X-Builders-langchain-agent/`](projects/10X-Builders-langchain-agent/) | Agente conversacional con LangChain y herramientas |
-| Gym Tracker Agent (entregable week-04) | [`projects/gym-tracker-agent/`](projects/gym-tracker-agent/) | Agente de seguimiento de entrenamientos por Telegram con LangChain y Google Sheets |
+| Agente Personal MVP               | [`projects/10x-builders-agent/`](projects/10x-builders-agent/)              | Agente multicanal (web + Telegram) con LangGraph, Supabase y GitHub OAuth |
+| Gym Tracker Agent (entregable week-04) | [`projects/gym-tracker-aisaac/`](projects/gym-tracker-aisaac/) | Agente de seguimiento de entrenamientos por Telegram con LangChain y Google Sheets |
 
 ---
 
