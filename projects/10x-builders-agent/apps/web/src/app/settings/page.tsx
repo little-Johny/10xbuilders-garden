@@ -24,6 +24,14 @@ export default async function SettingsPage() {
     .eq("user_id", user.id)
     .single();
 
+  const { data: githubIntegration } = await supabase
+    .from("user_integrations")
+    .select("provider_account_login, scopes, status, updated_at")
+    .eq("user_id", user.id)
+    .eq("provider", "github")
+    .eq("status", "active")
+    .maybeSingle();
+
   return (
     <div className="min-h-screen">
       <header className="border-b border-neutral-200 px-4 py-3 dark:border-neutral-800">
@@ -43,6 +51,14 @@ export default async function SettingsPage() {
           profile={profile}
           toolSettings={toolSettings ?? []}
           telegramLinked={!!telegramAccount}
+          github={
+            githubIntegration
+              ? {
+                  login: (githubIntegration.provider_account_login as string) ?? "(sin nombre)",
+                  scopes: (githubIntegration.scopes as string[]) ?? [],
+                }
+              : null
+          }
         />
       </main>
     </div>

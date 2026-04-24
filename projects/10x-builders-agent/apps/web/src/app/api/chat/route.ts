@@ -2,11 +2,14 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createServerClient } from "@agents/db";
 import { runAgent } from "@agents/agent";
+import { loadIntegrationsContext } from "@/lib/agent/integrations-context";
 
 export async function POST(request: Request) {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -65,6 +68,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Failed to create session" }, { status: 500 });
     }
 
+    const integrationsContext = await loadIntegrationsContext(db, user.id);
+
     const result = await runAgent({
       message,
       userId: user.id,
@@ -86,22 +91,16 @@ export async function POST(request: Request) {
         status: i.status as "active" | "revoked" | "expired",
         created_at: i.created_at as string,
       })),
+      integrationsContext,
     });
 
-    const pendingConfirmation = result.response.includes("pending_confirmation")
-      ? JSON.parse(result.response)
-      : null;
-
     return NextResponse.json({
-      response: pendingConfirmation ? null : result.response,
-      pendingConfirmation,
+      response: result.response,
+      pendingConfirmation: result.pendingConfirmation,
       toolCalls: result.toolCalls,
     });
   } catch (error) {
     console.error("Chat API error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

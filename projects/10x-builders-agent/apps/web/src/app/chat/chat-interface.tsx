@@ -2,6 +2,22 @@
 
 import { useState, useRef, useEffect } from "react";
 
+interface PendingConfirmation {
+  toolCallId: string;
+  toolName: string;
+  args: Record<string, unknown>;
+  summary: string;
+}
+
+interface ChatItem {
+  kind: "message" | "confirmation";
+  role?: string;
+  content?: string;
+  pending?: PendingConfirmation;
+  /** Marks a confirmation that has already been resolved so we don't let the user click again. */
+  resolved?: boolean;
+}
+
 interface Message {
   role: string;
   content: string;
@@ -14,22 +30,42 @@ interface Props {
 }
 
 export function ChatInterface({ agentName, initialMessages }: Props) {
-  const [messages, setMessages] = useState<Message[]>(initialMessages);
+  const [items, setItems] = useState<ChatItem[]>(
+    initialMessages.map((m) => ({ kind: "message" as const, role: m.role, content: m.content }))
+  );
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [busyConfirmId, setBusyConfirmId] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [items]);
+
+  function appendAssistantText(text: string) {
+    setItems((prev) => [...prev, { kind: "message", role: "assistant", content: text }]);
+  }
+
+  function appendPending(p: PendingConfirmation) {
+    setItems((prev) => [...prev, { kind: "confirmation", pending: p }]);
+  }
+
+  function markConfirmationResolved(toolCallId: string) {
+    setItems((prev) =>
+      prev.map((it) =>
+        it.kind === "confirmation" && it.pending?.toolCallId === toolCallId
+          ? { ...it, resolved: true }
+          : it
+      )
+    );
+  }
 
   async function handleSend(e: React.FormEvent) {
     e.preventDefault();
     const text = input.trim();
     if (!text || loading) return;
 
-    const userMsg: Message = { role: "user", content: text };
-    setMessages((prev) => [...prev, userMsg]);
+    setItems((prev) => [...prev, { kind: "message", role: "user", content: text }]);
     setInput("");
     setLoading(true);
 
@@ -39,41 +75,44 @@ export function ChatInterface({ agentName, initialMessages }: Props) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: text }),
       });
-
       const data = await res.json();
-
-      if (data.response) {
-        setMessages((prev) => [
-          ...prev,
-          { role: "assistant", content: data.response },
-        ]);
-      }
-
-      if (data.pendingConfirmation) {
-        setMessages((prev) => [
-          ...prev,
-          {
-            role: "assistant",
-            content: `Se requiere confirmación: ${data.pendingConfirmation.message}\n\n¿Deseas proceder?`,
-          },
-        ]);
-      }
+      if (data.response) appendAssistantText(data.response);
+      if (data.pendingConfirmation) appendPending(data.pendingConfirmation);
     } catch {
-      setMessages((prev) => [
-        ...prev,
-        { role: "assistant", content: "Error al procesar tu mensaje. Intenta de nuevo." },
-      ]);
+      appendAssistantText("Error al procesar tu mensaje. Intenta de nuevo.");
     } finally {
       setLoading(false);
     }
   }
 
+  async function handleConfirm(toolCallId: string, decision: "approve" | "reject") {
+    if (busyConfirmId) return;
+    setBusyConfirmId(toolCallId);
+    try {
+      const res = await fetch("/api/chat/confirm", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ toolCallId, decision }),
+      });
+      const data = await res.json();
+      markConfirmationResolved(toolCallId);
+      if (data.response) appendAssistantText(data.response);
+      if (data.pendingConfirmation) appendPending(data.pendingConfirmation);
+      if (!res.ok && data.detail) {
+        appendAssistantText(`No se pudo ejecutar la acción: ${data.detail}`);
+      }
+    } catch {
+      appendAssistantText("Error al registrar tu decisión. Intenta de nuevo.");
+    } finally {
+      setBusyConfirmId(null);
+    }
+  }
+
   return (
     <div className="flex flex-1 flex-col">
-      {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-6">
         <div className="mx-auto max-w-2xl space-y-4">
-          {messages.length === 0 && (
+          {items.length === 0 && (
             <div className="text-center text-sm text-neutral-400 py-20">
               <p className="text-lg font-medium text-neutral-600 dark:text-neutral-300">
                 ¡Hola! Soy {agentName}
@@ -81,22 +120,58 @@ export function ChatInterface({ agentName, initialMessages }: Props) {
               <p className="mt-1">Escribe un mensaje para comenzar.</p>
             </div>
           )}
-          {messages.map((msg, i) => (
-            <div
-              key={i}
-              className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
-            >
-              <div
-                className={`max-w-[80%] rounded-lg px-4 py-2.5 text-sm leading-relaxed ${
-                  msg.role === "user"
-                    ? "bg-blue-600 text-white"
-                    : "bg-neutral-100 text-neutral-900 dark:bg-neutral-800 dark:text-neutral-100"
-                }`}
-              >
-                <p className="whitespace-pre-wrap">{msg.content}</p>
+          {items.map((item, i) => {
+            if (item.kind === "message") {
+              const isUser = item.role === "user";
+              return (
+                <div key={i} className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
+                  <div
+                    className={`max-w-[80%] rounded-lg px-4 py-2.5 text-sm leading-relaxed ${
+                      isUser
+                        ? "bg-blue-600 text-white"
+                        : "bg-neutral-100 text-neutral-900 dark:bg-neutral-800 dark:text-neutral-100"
+                    }`}
+                  >
+                    <p className="whitespace-pre-wrap">{item.content}</p>
+                  </div>
+                </div>
+              );
+            }
+            const p = item.pending!;
+            const busy = busyConfirmId === p.toolCallId;
+            return (
+              <div key={i} className="flex justify-start">
+                <div className="max-w-[90%] w-full rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm dark:border-amber-700 dark:bg-amber-900/20">
+                  <p className="font-medium text-amber-900 dark:text-amber-200">
+                    Se requiere tu aprobación
+                  </p>
+                  <p className="mt-1 text-neutral-800 dark:text-neutral-100">{p.summary}</p>
+                  <pre className="mt-2 overflow-x-auto rounded bg-white/70 p-2 text-xs font-mono text-neutral-700 dark:bg-black/30 dark:text-neutral-200">
+                    {JSON.stringify(p.args, null, 2)}
+                  </pre>
+                  <div className="mt-3 flex gap-2">
+                    <button
+                      disabled={item.resolved || busy}
+                      onClick={() => handleConfirm(p.toolCallId, "approve")}
+                      className="rounded-md bg-green-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-green-700 disabled:opacity-50"
+                    >
+                      {busy ? "Ejecutando..." : "Aprobar"}
+                    </button>
+                    <button
+                      disabled={item.resolved || busy}
+                      onClick={() => handleConfirm(p.toolCallId, "reject")}
+                      className="rounded-md border border-neutral-300 px-3 py-1.5 text-xs font-medium hover:bg-neutral-50 disabled:opacity-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                  {item.resolved && (
+                    <p className="mt-2 text-xs text-neutral-500">Decisión registrada.</p>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
           {loading && (
             <div className="flex justify-start">
               <div className="rounded-lg bg-neutral-100 px-4 py-2.5 text-sm dark:bg-neutral-800">
@@ -108,12 +183,8 @@ export function ChatInterface({ agentName, initialMessages }: Props) {
         </div>
       </div>
 
-      {/* Input */}
       <div className="border-t border-neutral-200 px-4 py-3 dark:border-neutral-800">
-        <form
-          onSubmit={handleSend}
-          className="mx-auto flex max-w-2xl gap-2"
-        >
+        <form onSubmit={handleSend} className="mx-auto flex max-w-2xl gap-2">
           <input
             type="text"
             value={input}
