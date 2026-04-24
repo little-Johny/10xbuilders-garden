@@ -48,7 +48,8 @@ export const TOOL_CATALOG: ToolDefinition[] = [
   {
     id: "github_create_issue",
     name: "github_create_issue",
-    description: "Creates a new issue in a GitHub repository. Requires confirmation.",
+    description:
+      "Creates a new issue in a GitHub repository. Requires user confirmation before executing.",
     risk: "medium",
     requires_integration: "github",
     parameters_schema: {
@@ -60,6 +61,23 @@ export const TOOL_CATALOG: ToolDefinition[] = [
         body: { type: "string" },
       },
       required: ["owner", "repo", "title"],
+    },
+  },
+  {
+    id: "github_create_repo",
+    name: "github_create_repo",
+    description:
+      "Creates a new repository in the authenticated user's GitHub account. Requires user confirmation before executing.",
+    risk: "high",
+    requires_integration: "github",
+    parameters_schema: {
+      type: "object",
+      properties: {
+        name: { type: "string" },
+        description: { type: "string" },
+        private: { type: "boolean" },
+      },
+      required: ["name"],
     },
   },
 ];

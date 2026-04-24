@@ -3,13 +3,15 @@ import {
   HumanMessage,
   AIMessage,
   SystemMessage,
+  ToolMessage,
   type BaseMessage,
 } from "@langchain/core/messages";
 import type { DbClient } from "@agents/db";
 import type { UserToolSetting, UserIntegration } from "@agents/types";
 import { createChatModel } from "./model";
-import { buildLangChainTools } from "./tools/adapters";
-import { getSessionMessages, addMessage } from "@agents/db";
+import { ConfirmationRequiredError, buildLangChainTools } from "./tools/adapters";
+import { createToolCall, getSessionMessages, addMessage } from "@agents/db";
+import type { IntegrationsContext, PendingConfirmation } from "./types";
 
 const GraphState = Annotation.Root({
   messages: Annotation<BaseMessage[]>({
@@ -19,6 +21,10 @@ const GraphState = Annotation.Root({
   sessionId: Annotation<string>(),
   userId: Annotation<string>(),
   systemPrompt: Annotation<string>(),
+  pendingConfirmation: Annotation<PendingConfirmation | null>({
+    reducer: (_prev, next) => next,
+    default: () => null,
+  }),
 });
 
 export interface AgentInput {
@@ -29,17 +35,34 @@ export interface AgentInput {
   db: DbClient;
   enabledTools: UserToolSetting[];
   integrations: UserIntegration[];
+  /**
+   * Runtime-only secrets (OAuth access tokens) that tools consume. Never
+   * written to the DB, never echoed into the message history.
+   */
+  integrationsContext?: IntegrationsContext;
 }
 
 export interface AgentOutput {
-  response: string;
+  /** Final assistant text, or null when the agent is awaiting confirmation. */
+  response: string | null;
   toolCalls: string[];
+  /** Set when a mutating tool was requested; the graph halted without calling the model again. */
+  pendingConfirmation: PendingConfirmation | null;
 }
 
 const MAX_TOOL_ITERATIONS = 6;
 
 export async function runAgent(input: AgentInput): Promise<AgentOutput> {
-  const { message, userId, sessionId, systemPrompt, db, enabledTools, integrations } = input;
+  const {
+    message,
+    userId,
+    sessionId,
+    systemPrompt,
+    db,
+    enabledTools,
+    integrations,
+    integrationsContext = {},
+  } = input;
 
   const model = createChatModel();
   const lcTools = buildLangChainTools({
@@ -48,6 +71,7 @@ export async function runAgent(input: AgentInput): Promise<AgentOutput> {
     sessionId,
     enabledTools,
     integrations,
+    integrationsContext,
   });
 
   const modelWithTools = lcTools.length > 0 ? model.bindTools(lcTools) : model;
@@ -78,21 +102,60 @@ export async function runAgent(input: AgentInput): Promise<AgentOutput> {
       return {};
     }
 
-    const { ToolMessage } = await import("@langchain/core/messages");
     const results: BaseMessage[] = [];
     for (const tc of lastMsg.tool_calls) {
       const matchingTool = lcTools.find((t) => t.name === tc.name);
       toolCallNames.push(tc.name);
-      if (matchingTool) {
+      if (!matchingTool) {
+        results.push(
+          new ToolMessage({
+            content: JSON.stringify({ error: `Unknown tool: ${tc.name}` }),
+            tool_call_id: tc.id!,
+          })
+        );
+        continue;
+      }
+
+      try {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const result = await (matchingTool as any).invoke(tc.args);
         results.push(new ToolMessage({ content: String(result), tool_call_id: tc.id! }));
+      } catch (err) {
+        if (err instanceof ConfirmationRequiredError) {
+          // Persist the pending call so the confirmation endpoints can find it
+          // by id, then short-circuit the graph. Crucially: we do NOT append a
+          // ToolMessage with a "waiting for approval" string — there's nothing
+          // for the model to reason about, and that's precisely what prevents
+          // the confirmation loop described in the brief.
+          const record = await createToolCall(
+            db,
+            sessionId,
+            err.toolName,
+            err.args,
+            true
+          );
+          return {
+            pendingConfirmation: {
+              toolCallId: record.id,
+              toolName: err.toolName,
+              args: err.args,
+              summary: err.summary,
+            },
+          };
+        }
+        const errMsg = err instanceof Error ? err.message : String(err);
+        results.push(
+          new ToolMessage({
+            content: JSON.stringify({ error: errMsg }),
+            tool_call_id: tc.id!,
+          })
+        );
       }
     }
     return { messages: results };
   }
 
-  function shouldContinue(state: typeof GraphState.State): string {
+  function shouldContinueAfterAgent(state: typeof GraphState.State): string {
     const lastMsg = state.messages[state.messages.length - 1];
     if (lastMsg instanceof AIMessage && lastMsg.tool_calls?.length) {
       const iterations = state.messages.filter(
@@ -104,15 +167,26 @@ export async function runAgent(input: AgentInput): Promise<AgentOutput> {
     return "end";
   }
 
+  function shouldContinueAfterTools(state: typeof GraphState.State): string {
+    // Structured halt: if any tool in this turn asked for confirmation, we end
+    // the run right here and let the API layer surface the pending state to
+    // the user. No more model calls this turn.
+    if (state.pendingConfirmation) return "end";
+    return "agent";
+  }
+
   const graph = new StateGraph(GraphState)
     .addNode("agent", agentNode)
     .addNode("tools", toolExecutorNode)
     .addEdge("__start__", "agent")
-    .addConditionalEdges("agent", shouldContinue, {
+    .addConditionalEdges("agent", shouldContinueAfterAgent, {
       tools: "tools",
       end: "__end__",
     })
-    .addEdge("tools", "agent");
+    .addConditionalEdges("tools", shouldContinueAfterTools, {
+      agent: "agent",
+      end: "__end__",
+    });
 
   const checkpointer = new MemorySaver();
   const app = graph.compile({ checkpointer });
@@ -124,9 +198,18 @@ export async function runAgent(input: AgentInput): Promise<AgentOutput> {
   ];
 
   const finalState = await app.invoke(
-    { messages: initialMessages, sessionId, userId, systemPrompt },
+    { messages: initialMessages, sessionId, userId, systemPrompt, pendingConfirmation: null },
     { configurable: { thread_id: sessionId } }
   );
+
+  const pending = (finalState.pendingConfirmation ?? null) as PendingConfirmation | null;
+
+  if (pending) {
+    // Don't persist any assistant text for a pending turn: the UI owns the
+    // approval prompt and we want the transcript to reflect what actually
+    // happened.
+    return { response: null, toolCalls: toolCallNames, pendingConfirmation: pending };
+  }
 
   const lastMessage = finalState.messages[finalState.messages.length - 1];
   const responseText =
@@ -136,5 +219,5 @@ export async function runAgent(input: AgentInput): Promise<AgentOutput> {
 
   await addMessage(db, sessionId, "assistant", responseText);
 
-  return { response: responseText, toolCalls: toolCallNames };
+  return { response: responseText, toolCalls: toolCallNames, pendingConfirmation: null };
 }
