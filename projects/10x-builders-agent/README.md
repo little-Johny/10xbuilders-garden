@@ -15,7 +15,7 @@ Monorepo con **Next.js**, **Supabase**, **LangGraph** y **OpenRouter**. Incluye 
 ## Paso 1 — Clonar e instalar dependencias
 
 ```bash
-cd agents
+cd projects/10x-builders-agent
 npm install
 ```
 
@@ -35,12 +35,14 @@ npm install
 ## Paso 3 — Aplicar el esquema SQL (tablas + RLS)
 
 1. En Supabase, abre **SQL Editor**.
-2. Abre el archivo del repo:
+2. Ejecuta **en orden** los archivos de migración:
 
-   `packages/db/supabase/migrations/00001_initial_schema.sql`
+   | Migración | Archivo | Descripción |
+   |-----------|---------|-------------|
+   | 1 | `packages/db/supabase/migrations/00001_initial_schema.sql` | Tablas base, RLS, trigger de perfil |
+   | 2 | `packages/db/supabase/migrations/00002_github_integration.sql` | Columnas de GitHub en `user_integrations`, trigger `updated_at` |
 
-3. Copia **todo** el contenido y pégalo en el editor.
-4. Ejecuta el script (**Run**).
+3. Copia el contenido de cada archivo y pégalo en el editor SQL. Ejecuta uno a la vez.
 
 Si algo falla (por ejemplo, el trigger `on_auth_user_created` en un proyecto ya modificado), revisa el mensaje de error; en la mayoría de proyectos nuevos el script aplica de una vez.
 
@@ -77,11 +79,14 @@ Next.js carga `.env*` desde el directorio de la app **`apps/web`**, no desde la 
    |----------|-------------|
    | `NEXT_PUBLIC_SUPABASE_URL` | URL del proyecto Supabase |
    | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Clave `anon` |
-   | `SUPABASE_SERVICE_ROLE_KEY` | Clave `service_role` (solo servidor; la usa la API del agente y Telegram contra Postgres) |
+   | `SUPABASE_SERVICE_ROLE_KEY` | Clave `service_role` (solo servidor) |
    | `OPENROUTER_API_KEY` | Clave de OpenRouter |
-   | `TELEGRAM_BOT_TOKEN` | *(Opcional)* Token del bot |
-   | `TELEGRAM_WEBHOOK_SECRET` | *(Opcional)* Secreto que Telegram enviará en cabecera; debe coincidir con el configurado al registrar el webhook |
-   | `OAUTH_ENCRYPTION_KEY` | Reservado para cifrado de tokens OAuth en el futuro; puedes dejar un placeholder hasta integrar proveedores |
+   | `OAUTH_ENCRYPTION_KEY` | Clave para cifrar/descifrar tokens OAuth de terceros (AES-256-GCM). Genera con `openssl rand -base64 32` |
+   | `GITHUB_CLIENT_ID` | *(Opcional)* Client ID de la GitHub OAuth App |
+   | `GITHUB_CLIENT_SECRET` | *(Opcional)* Client Secret de la GitHub OAuth App |
+   | `NEXT_PUBLIC_APP_URL` | *(Opcional)* URL base de la app (default: `http://localhost:3000`). Necesario para el callback de GitHub OAuth |
+   | `TELEGRAM_BOT_TOKEN` | *(Opcional)* Token del bot de Telegram |
+   | `TELEGRAM_WEBHOOK_SECRET` | *(Opcional)* Secreto para validar webhooks de Telegram |
 
 Referencia de nombres: [.env.example](.env.example).
 
@@ -115,7 +120,27 @@ El modelo por defecto está definido en `packages/agent/src/model.ts` (OpenRoute
 
 ---
 
-## Paso 8 — Telegram (opcional)
+## Paso 8 — GitHub (opcional)
+
+Para que el agente opere sobre GitHub (listar repos, listar issues, crear issues, crear repos), el usuario debe conectar su cuenta de GitHub desde la pantalla de Ajustes.
+
+### Configurar la GitHub OAuth App
+
+1. Ve a [GitHub → Settings → Developer settings → OAuth Apps → New OAuth App](https://github.com/settings/developers).
+2. Rellena:
+   - **Application name**: nombre libre (ej. "10x Agent Dev").
+   - **Homepage URL**: `http://localhost:3000`
+   - **Authorization callback URL**: `http://localhost:3000/api/auth/github/callback`
+3. Al crear la app, copia el **Client ID** → `GITHUB_CLIENT_ID`.
+4. Genera un **Client Secret** → `GITHUB_CLIENT_SECRET`.
+5. Añade ambos a `apps/web/.env.local` y reinicia el servidor.
+6. En la web: **Ajustes → Integraciones → GitHub → Conectar**.
+
+Para detalles sobre el diseño de la integración (cifrado de tokens, flujo de confirmación, niveles de riesgo), ver [docs/github-integration.md](docs/github-integration.md).
+
+---
+
+## Paso 9 — Telegram (opcional)
 
 Telegram **exige HTTPS** para webhooks. En local:
 
@@ -158,6 +183,8 @@ Después de vincular, los mensajes al bot usan el mismo pipeline que el chat web
 - [docs/brief.md](docs/brief.md) — visión y brief original.
 - [docs/architecture.md](docs/architecture.md) — arquitectura técnica del MVP.
 - [docs/plan.md](docs/plan.md) — fases y decisiones de implementación.
+- [docs/github-integration.md](docs/github-integration.md) — diseño de la integración de GitHub (OAuth, cifrado, confirmaciones).
+- [CHANGELOG.md](CHANGELOG.md) — historial de cambios.
 
 ---
 

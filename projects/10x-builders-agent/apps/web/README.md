@@ -1,36 +1,53 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# apps/web — Aplicación web del Agente Personal
 
-## Getting Started
+Aplicación **Next.js (App Router)** que sirve como interfaz principal del agente y gateway de API para todos los canales (web, Telegram).
 
-First, run the development server:
+## Rutas de la aplicación
+
+| Ruta | Tipo | Descripción |
+|------|------|-------------|
+| `/` | Page | Redirect inteligente → onboarding o chat |
+| `/login` | Page | Inicio de sesión con email |
+| `/signup` | Page | Registro de cuenta |
+| `/onboarding` | Page | Wizard multi-paso (perfil → agente → tools → revisión) |
+| `/chat` | Page | Interfaz de chat con el agente |
+| `/settings` | Page | Ajustes de perfil, agente, herramientas e integraciones |
+
+## API Routes
+
+| Endpoint | Método | Descripción |
+|----------|--------|-------------|
+| `/api/chat` | POST | Envía mensaje al agente (`runAgent`) |
+| `/api/chat/confirm` | POST | Aprueba o rechaza un tool call pendiente |
+| `/api/auth/signout` | POST | Cierra sesión |
+| `/api/auth/github/start` | GET | Inicia flujo OAuth de GitHub |
+| `/api/auth/github/callback` | GET | Callback de GitHub OAuth (intercambia código por token) |
+| `/api/auth/github/disconnect` | POST | Desconecta integración de GitHub |
+| `/api/telegram/webhook` | POST | Recibe eventos del bot de Telegram |
+| `/api/telegram/setup` | GET | Registra el webhook en Telegram |
+
+## Estructura de `src/`
+
+```
+src/
+├── app/                     # App Router pages + API routes
+├── lib/
+│   ├── agent/
+│   │   └── integrations-context.ts   # Carga tokens descifrados en memoria
+│   ├── github/
+│   │   └── oauth.ts                  # Helpers para el flujo OAuth de GitHub
+│   └── supabase/
+│       ├── server.ts                 # Cliente Supabase para RSC/API
+│       └── middleware.ts             # Helper de auth para middleware
+└── middleware.ts             # Auth guard global
+```
+
+## Desarrollo
+
+La app se ejecuta desde la raíz del monorepo:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+La app queda en **http://localhost:3000**. Las variables de entorno se leen de `apps/web/.env.local` (ver [README del proyecto](../../README.md) para la lista completa).
