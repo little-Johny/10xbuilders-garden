@@ -121,14 +121,10 @@ Tras reportar los commits, evaluar si los cambios commiteados podrían requerir 
 Si al menos un criterio se cumple:
 
 1. Informar al usuario: *"Los cambios commiteados podrían requerir actualización de documentación. ¿Invocar al agente candace para evaluarlo?"*
-2. Si el usuario acepta → invocar a candace incluyendo en el prompt de invocación:
-   - La frase literal: `"Invocación automática desde commit-organizer"` (candace la usa para detectar el modo automático y no re-invocar este skill al terminar)
-   - El reporte de commits realizados (tabla con hashes, mensajes y archivos afectados)
-3. Si el usuario rechaza → terminar normalmente
+2. Si el usuario acepta → invocar a candace pasando en el prompt el reporte de commits realizados (tabla con hashes, mensajes y archivos afectados).
+3. Si el usuario rechaza → terminar normalmente.
 
 Si ningún criterio se cumple, terminar sin proponer la invocación.
-
-> **Importante:** cuando candace es invocada desde este skill, candace NO re-invoca a commit-organizer al terminar — los archivos de documentación generados quedan pendientes de commit para evitar un loop circular.
 
 ## Reglas de Conventional Commits
 
