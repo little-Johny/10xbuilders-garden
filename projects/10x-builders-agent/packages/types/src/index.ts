@@ -22,6 +22,7 @@ export interface UserIntegration {
   status: "active" | "revoked" | "expired";
   provider_account_id?: string | null;
   provider_account_login?: string | null;
+  access_token_expires_at?: string | null;
   created_at: string;
   updated_at?: string;
 }
