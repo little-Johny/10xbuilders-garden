@@ -84,7 +84,9 @@ Next.js carga `.env*` desde el directorio de la app **`apps/web`**, no desde la 
    | `OAUTH_ENCRYPTION_KEY` | Clave para cifrar/descifrar tokens OAuth de terceros (AES-256-GCM). Genera con `openssl rand -base64 32` |
    | `GITHUB_CLIENT_ID` | *(Opcional)* Client ID de la GitHub OAuth App |
    | `GITHUB_CLIENT_SECRET` | *(Opcional)* Client Secret de la GitHub OAuth App |
-   | `NEXT_PUBLIC_APP_URL` | *(Opcional)* URL base de la app (default: `http://localhost:3000`). Necesario para el callback de GitHub OAuth |
+   | `GOOGLE_CLIENT_ID` | *(Opcional)* Client ID del OAuth Client de Google Cloud Console |
+   | `GOOGLE_CLIENT_SECRET` | *(Opcional)* Client Secret del OAuth Client de Google |
+   | `NEXT_PUBLIC_APP_URL` | *(Opcional)* URL base de la app (default: `http://localhost:3000`). Necesario para el callback de GitHub y Google OAuth |
    | `TELEGRAM_BOT_TOKEN` | *(Opcional)* Token del bot de Telegram |
    | `TELEGRAM_WEBHOOK_SECRET` | *(Opcional)* Secreto para validar webhooks de Telegram |
 
@@ -140,7 +142,26 @@ Para detalles sobre el diseño de la integración (cifrado de tokens, flujo de c
 
 ---
 
-## Paso 9 — Telegram (opcional)
+## Paso 9 — Google Calendar (opcional)
+
+Para que el agente opere sobre Google Calendar (listar, crear, modificar y eliminar eventos, incluyendo series recurrentes), el usuario debe conectar su cuenta de Google desde Ajustes.
+
+### Configurar el OAuth Client en Google Cloud Console
+
+1. Ve a [Google Cloud Console → APIs & Services → Credentials](https://console.cloud.google.com/apis/credentials).
+2. Habilita la **Google Calendar API** en el proyecto si aún no lo está.
+3. **Create Credentials → OAuth client ID → Web application**.
+4. **Authorized redirect URIs**: `http://localhost:3000/api/auth/google/callback`.
+5. Copia el **Client ID** → `GOOGLE_CLIENT_ID` y el **Client Secret** → `GOOGLE_CLIENT_SECRET` en `apps/web/.env.local`.
+6. En la web: **Ajustes → Google → Conectar Google**.
+
+El agente pide los scopes `openid email https://www.googleapis.com/auth/calendar.events`. El access token se renueva automáticamente con el refresh token cuando expira (~1h).
+
+Para detalles sobre el diseño (recurrencias, scope instance/series, refresh flow), ver [docs/calendar-integration.md](docs/calendar-integration.md).
+
+---
+
+## Paso 10 — Telegram (opcional)
 
 Telegram **exige HTTPS** para webhooks. En local:
 
