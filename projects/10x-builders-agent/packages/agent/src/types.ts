@@ -10,6 +10,16 @@ export interface IntegrationsContext {
     accessToken: string;
     login?: string;
   };
+  google?: {
+    accessToken: string;
+    email?: string;
+    /**
+     * IANA timezone of the connected user (e.g. "America/Bogota"). Used by
+     * Calendar tools to anchor events the user describes in local terms
+     * ("mañana a las 10am") to a concrete RFC3339 instant.
+     */
+    timeZone?: string;
+  };
 }
 
 export interface PendingConfirmation {
