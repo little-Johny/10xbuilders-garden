@@ -10,6 +10,7 @@ interface Props {
   toolSettings: Array<{ tool_id: string; enabled: boolean }>;
   telegramLinked: boolean;
   github: { login: string; scopes: string[] } | null;
+  google: { email: string; scopes: string[] } | null;
 }
 
 const TOOL_IDS = [
@@ -19,9 +20,14 @@ const TOOL_IDS = [
   "github_list_issues",
   "github_create_issue",
   "github_create_repo",
+  "gcal_list_events",
+  "gcal_get_event",
+  "gcal_create_event",
+  "gcal_update_event",
+  "gcal_delete_event",
 ];
 
-export function SettingsForm({ userId, profile, toolSettings, telegramLinked, github }: Props) {
+export function SettingsForm({ userId, profile, toolSettings, telegramLinked, github, google }: Props) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -90,6 +96,14 @@ export function SettingsForm({ userId, profile, toolSettings, telegramLinked, gi
       return;
     }
     const res = await fetch("/api/auth/github/disconnect", { method: "POST" });
+    if (res.ok) router.refresh();
+  }
+
+  async function disconnectGoogle() {
+    if (!confirm("¿Desconectar tu cuenta de Google? El agente dejará de poder operar sobre tu calendario.")) {
+      return;
+    }
+    const res = await fetch("/api/auth/google/disconnect", { method: "POST" });
     if (res.ok) router.refresh();
   }
 
@@ -189,6 +203,42 @@ export function SettingsForm({ userId, profile, toolSettings, telegramLinked, gi
               className="inline-flex items-center gap-2 rounded-md bg-neutral-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-100"
             >
               Conectar GitHub
+            </a>
+          </div>
+        )}
+      </section>
+
+      {/* Google */}
+      <section className="space-y-4">
+        <h2 className="text-base font-semibold">Google</h2>
+        {google ? (
+          <div className="rounded-md border border-neutral-200 p-4 space-y-2 dark:border-neutral-800">
+            <p className="text-sm">
+              Conectado como{" "}
+              <span className="font-mono font-semibold text-blue-600 dark:text-blue-400">
+                {google.email}
+              </span>
+            </p>
+            {google.scopes.length > 0 && (
+              <p className="text-xs text-neutral-500">Permisos: {google.scopes.join(", ")}</p>
+            )}
+            <button
+              onClick={disconnectGoogle}
+              className="rounded-md border border-red-300 px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950"
+            >
+              Desconectar
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            <p className="text-sm text-neutral-500">
+              Conecta tu cuenta para que el agente pueda listar, crear y modificar eventos en tu calendario (con tu aprobación).
+            </p>
+            <a
+              href="/api/auth/google/start"
+              className="inline-flex items-center gap-2 rounded-md bg-neutral-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-100"
+            >
+              Conectar Google
             </a>
           </div>
         )}

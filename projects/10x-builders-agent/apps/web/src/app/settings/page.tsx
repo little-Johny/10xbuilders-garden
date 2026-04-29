@@ -32,6 +32,14 @@ export default async function SettingsPage() {
     .eq("status", "active")
     .maybeSingle();
 
+  const { data: googleIntegration } = await supabase
+    .from("user_integrations")
+    .select("provider_account_login, scopes, status, updated_at")
+    .eq("user_id", user.id)
+    .eq("provider", "google")
+    .eq("status", "active")
+    .maybeSingle();
+
   return (
     <div className="min-h-screen">
       <header className="border-b border-neutral-200 px-4 py-3 dark:border-neutral-800">
@@ -56,6 +64,14 @@ export default async function SettingsPage() {
               ? {
                   login: (githubIntegration.provider_account_login as string) ?? "(sin nombre)",
                   scopes: (githubIntegration.scopes as string[]) ?? [],
+                }
+              : null
+          }
+          google={
+            googleIntegration
+              ? {
+                  email: (googleIntegration.provider_account_login as string) ?? "(sin email)",
+                  scopes: (googleIntegration.scopes as string[]) ?? [],
                 }
               : null
           }
