@@ -73,3 +73,19 @@ Diseño detallado en [github-integration.md](github-integration.md).
 - [x] `docs/brief.md` — visión y brief original
 - [x] `docs/github-integration.md` — diseño de la integración de GitHub
 - [x] `CHANGELOG.md`
+
+### Fase 8: Google Calendar OAuth ✅
+
+Diseño detallado en [calendar-integration.md](calendar-integration.md). Plan operativo en [calendar-integration-brief.md](calendar-integration-brief.md).
+
+- [x] OAuth Client en Google Cloud Console: flujo authorize → callback → token exchange con `access_type=offline` + `prompt=consent`
+- [x] Migración `00003_google_integration.sql` (`encrypted_refresh_token`, `access_token_expires_at`)
+- [x] Endpoints: `/api/auth/google/start`, `/api/auth/google/callback`, `/api/auth/google/disconnect`
+- [x] Cliente REST mínimo de Google Calendar (`packages/agent/src/integrations/google-calendar.ts`)
+- [x] Refresh automático del access token con `ensureFreshGoogleAccessToken` (`apps/web/src/lib/google/access-token.ts`); marca como `revoked` ante `invalid_grant`
+- [x] Tools: `gcal_list_events`, `gcal_get_event`, `gcal_create_event`, `gcal_update_event`, `gcal_delete_event`
+- [x] Eventos recurrentes con esquema de alto nivel traducido a `RRULE` (RFC 5545)
+- [x] Scope `instance | series` para modificar/eliminar series, mostrado explícitamente en el card de confirmación
+- [x] Detección de conflictos en las primeras 8 semanas antes de crear una serie
+- [x] `IntegrationsContext.google` con email + zona horaria del perfil del usuario
+- [x] UI de conexión/desconexión en Ajustes con email vinculado y scopes
