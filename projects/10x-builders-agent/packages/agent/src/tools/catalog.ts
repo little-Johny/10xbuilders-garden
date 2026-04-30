@@ -170,6 +170,21 @@ export const TOOL_CATALOG: ToolDefinition[] = [
       required: ["event_id", "scope"],
     },
   },
+  {
+    id: "bash",
+    name: "bash",
+    description:
+      "Ejecuta un comando en bash (sistemas unix-like) en el servidor. Cada llamada crea un proceso nuevo (`/bin/bash -lc`) sin estado persistente entre llamadas: variables, `cd`, exports solo viven dentro de esa ejecución. Usa `cwd` para fijar la carpeta base de esta invocación. Requiere confirmación del usuario.",
+    risk: "high",
+    parameters_schema: {
+      type: "object",
+      properties: {
+        command: { type: "string" },
+        cwd: { type: "string" },
+      },
+      required: ["command"],
+    },
+  },
 ];
 
 export function getToolRisk(toolId: string): ToolRisk {

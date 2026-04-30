@@ -20,6 +20,7 @@ import {
   type Recurrence,
   updateEvent,
 } from "../integrations/google-calendar";
+import { isBashToolAllowed, runBash } from "./bash-exec";
 
 interface ToolContext {
   db: DbClient;
@@ -194,6 +195,13 @@ export async function summariseToolCall(
         ? "Esta acción afectará SOLO a esa ocurrencia."
         : "Esta acción afectará TODA la serie.";
     return `Eliminar evento ${String(args.event_id)}. ${scopeLabel}`;
+  }
+
+  if (toolName === "bash") {
+    const cmd = String(args.command ?? "");
+    const cmdShort = cmd.length > 80 ? cmd.slice(0, 80) + "…" : cmd;
+    const cwd = args.cwd ? ` (cwd: ${String(args.cwd)})` : "";
+    return `Ejecutar comando bash${cwd}: ${cmdShort}`;
   }
 
   return `Ejecutar ${toolName}.`;
@@ -601,6 +609,26 @@ export function buildLangChainTools(ctx: ToolContext) {
           schema: z.object({
             event_id: z.string(),
             scope: z.enum(["instance", "series"]),
+          }),
+        },
+      ),
+    );
+  }
+
+  if (isBashToolAllowed() && isToolAvailable("bash", ctx)) {
+    tools.push(
+      tool(
+        async (input) => {
+          const result = await runBash(input.command, input.cwd ?? undefined);
+          return JSON.stringify(result);
+        },
+        {
+          name: "bash",
+          description:
+            "Ejecuta un comando bash en el servidor (unix-like). Cada llamada crea un proceso nuevo (`bash -lc`); no hay estado entre llamadas. `cwd` opcional fija la carpeta base. Requiere confirmación explícita del usuario (gestionada por el grafo).",
+          schema: z.object({
+            command: z.string().min(1),
+            cwd: z.string().nullable().optional(),
           }),
         },
       ),
