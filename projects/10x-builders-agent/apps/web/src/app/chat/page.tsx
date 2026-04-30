@@ -25,15 +25,43 @@ export default async function ChatPage() {
     .limit(1)
     .single();
 
-  let sessionMessages: Array<{ role: string; content: string; created_at: string }> = [];
+  let sessionMessages: Array<{
+    role: string;
+    content: string;
+    created_at: string;
+    structured_payload: Record<string, unknown> | null;
+  }> = [];
   if (messages?.id) {
-    const { data } = await supabase
+    // Fetch the LATEST 50 (descending), then reverse to chronological order
+    // for display. Ascending+limit drops the most recent rows, which is what
+    // hid the pending-confirmation cards from refreshes once a session
+    // accumulated more than 50 messages.
+    const { data, error } = await supabase
       .from("agent_messages")
-      .select("role, content, created_at")
+      .select("role, content, created_at, structured_payload")
       .eq("session_id", messages.id)
-      .order("created_at", { ascending: true })
+      .order("created_at", { ascending: false })
       .limit(50);
-    sessionMessages = data ?? [];
+    if (error) console.error("[chat/page] failed to load messages", error);
+    sessionMessages = (data ?? []).slice().reverse();
+    const pendingCount = sessionMessages.filter(
+      (m) =>
+        (m.structured_payload as { type?: string } | null)?.type ===
+        "pending_confirmation",
+    ).length;
+    console.log("[chat/page] hydrate", {
+      userId: user.id,
+      sessionId: messages.id,
+      total: sessionMessages.length,
+      withStructuredPayload: sessionMessages.filter(
+        (m) => m.structured_payload !== null,
+      ).length,
+      pendingCards: pendingCount,
+    });
+  } else {
+    console.log("[chat/page] hydrate — no active session", {
+      userId: user.id,
+    });
   }
 
   return (

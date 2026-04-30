@@ -22,6 +22,7 @@ interface Message {
   role: string;
   content: string;
   created_at?: string;
+  structured_payload?: Record<string, unknown> | null;
 }
 
 interface Props {
@@ -29,9 +30,65 @@ interface Props {
   initialMessages: Message[];
 }
 
+/**
+ * Hydrate persisted messages into chat items. Messages whose
+ * `structured_payload.type === "pending_confirmation"` become confirmation
+ * cards (active or already-resolved); plain text messages render as text.
+ * `agent_messages` is the single source of truth — we never query
+ * `tool_calls` separately from the page.
+ */
+function hydrateInitialItems(messages: Message[]): ChatItem[] {
+  const items: ChatItem[] = [];
+  let cards = 0;
+  for (const m of messages) {
+    const payload = m.structured_payload as
+      | {
+          type?: string;
+          tool_call_id?: string;
+          tool_name?: string;
+          args?: Record<string, unknown>;
+          summary?: string;
+          resolved?: boolean;
+        }
+      | null
+      | undefined;
+    if (payload?.type === "pending_confirmation" && payload.tool_call_id) {
+      cards++;
+      items.push({
+        kind: "confirmation",
+        pending: {
+          toolCallId: payload.tool_call_id,
+          toolName: payload.tool_name ?? "",
+          args: payload.args ?? {},
+          summary: payload.summary ?? "",
+        },
+        resolved: payload.resolved === true,
+      });
+      continue;
+    }
+    if (m.content) {
+      items.push({ kind: "message", role: m.role, content: m.content });
+    }
+  }
+  if (typeof window !== "undefined") {
+    console.log("[chat-interface] hydrate", {
+      messages: messages.length,
+      items: items.length,
+      cards,
+      sample: messages.slice(0, 3).map((m) => ({
+        role: m.role,
+        hasPayload: m.structured_payload !== null,
+        payloadType:
+          (m.structured_payload as { type?: string } | null)?.type ?? null,
+      })),
+    });
+  }
+  return items;
+}
+
 export function ChatInterface({ agentName, initialMessages }: Props) {
-  const [items, setItems] = useState<ChatItem[]>(
-    initialMessages.map((m) => ({ kind: "message" as const, role: m.role, content: m.content }))
+  const [items, setItems] = useState<ChatItem[]>(() =>
+    hydrateInitialItems(initialMessages),
   );
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);

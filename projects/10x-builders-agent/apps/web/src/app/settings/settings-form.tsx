@@ -27,41 +27,47 @@ const TOOL_IDS = [
   "gcal_delete_event",
 ];
 
-export function SettingsForm({ userId, profile, toolSettings, telegramLinked, github, google }: Props) {
+export function SettingsForm({
+  userId,
+  profile,
+  toolSettings,
+  telegramLinked,
+  github,
+  google,
+}: Props) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
   const [name, setName] = useState((profile?.name as string) ?? "");
   const [agentName, setAgentName] = useState((profile?.agent_name as string) ?? "Agente");
-  const [systemPrompt, setSystemPrompt] = useState(
-    (profile?.agent_system_prompt as string) ?? ""
-  );
+  const [systemPrompt, setSystemPrompt] = useState((profile?.agent_system_prompt as string) ?? "");
   const [enabledTools, setEnabledTools] = useState<string[]>(
-    toolSettings.filter((t) => t.enabled).map((t) => t.tool_id)
+    toolSettings.filter((t) => t.enabled).map((t) => t.tool_id),
   );
   const [linkCode, setLinkCode] = useState<string | null>(null);
 
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
   );
 
   function toggleTool(id: string) {
-    setEnabledTools((prev) =>
-      prev.includes(id) ? prev.filter((t) => t !== id) : [...prev, id]
-    );
+    setEnabledTools((prev) => (prev.includes(id) ? prev.filter((t) => t !== id) : [...prev, id]));
   }
 
   async function handleSave() {
     setSaving(true);
 
-    await supabase.from("profiles").update({
-      name,
-      agent_name: agentName,
-      agent_system_prompt: systemPrompt.slice(0, 500),
-      updated_at: new Date().toISOString(),
-    }).eq("id", userId);
+    await supabase
+      .from("profiles")
+      .update({
+        name,
+        agent_name: agentName,
+        agent_system_prompt: systemPrompt.slice(0, 500),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", userId);
 
     for (const toolId of TOOL_IDS) {
       await supabase.from("user_tool_settings").upsert(
@@ -71,7 +77,7 @@ export function SettingsForm({ userId, profile, toolSettings, telegramLinked, gi
           enabled: enabledTools.includes(toolId),
           config_json: {},
         },
-        { onConflict: "user_id,tool_id" }
+        { onConflict: "user_id,tool_id" },
       );
     }
 
@@ -92,7 +98,11 @@ export function SettingsForm({ userId, profile, toolSettings, telegramLinked, gi
   }
 
   async function disconnectGithub() {
-    if (!confirm("¿Desconectar tu cuenta de GitHub? El agente dejará de poder operar sobre tus repos.")) {
+    if (
+      !confirm(
+        "¿Desconectar tu cuenta de GitHub? El agente dejará de poder operar sobre tus repos.",
+      )
+    ) {
       return;
     }
     const res = await fetch("/api/auth/github/disconnect", { method: "POST" });
@@ -100,7 +110,11 @@ export function SettingsForm({ userId, profile, toolSettings, telegramLinked, gi
   }
 
   async function disconnectGoogle() {
-    if (!confirm("¿Desconectar tu cuenta de Google? El agente dejará de poder operar sobre tu calendario.")) {
+    if (
+      !confirm(
+        "¿Desconectar tu cuenta de Google? El agente dejará de poder operar sobre tu calendario.",
+      )
+    ) {
       return;
     }
     const res = await fetch("/api/auth/google/disconnect", { method: "POST" });
@@ -196,7 +210,8 @@ export function SettingsForm({ userId, profile, toolSettings, telegramLinked, gi
         ) : (
           <div className="space-y-2">
             <p className="text-sm text-neutral-500">
-              Conecta tu cuenta para que el agente pueda listar repos e issues, y crear nuevos (con tu aprobación).
+              Conecta tu cuenta para que el agente pueda listar repos e issues, y crear nuevos (con
+              tu aprobación).
             </p>
             <a
               href="/api/auth/github/start"
@@ -232,7 +247,8 @@ export function SettingsForm({ userId, profile, toolSettings, telegramLinked, gi
         ) : (
           <div className="space-y-2">
             <p className="text-sm text-neutral-500">
-              Conecta tu cuenta para que el agente pueda listar, crear y modificar eventos en tu calendario (con tu aprobación).
+              Conecta tu cuenta para que el agente pueda listar, crear y modificar eventos en tu
+              calendario (con tu aprobación).
             </p>
             <a
               href="/api/auth/google/start"
@@ -285,9 +301,7 @@ export function SettingsForm({ userId, profile, toolSettings, telegramLinked, gi
         >
           {saving ? "Guardando..." : "Guardar cambios"}
         </button>
-        {saved && (
-          <span className="text-sm text-green-600">Guardado correctamente.</span>
-        )}
+        {saved && <span className="text-sm text-green-600">Guardado correctamente.</span>}
       </div>
     </div>
   );

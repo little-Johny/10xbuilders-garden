@@ -1,11 +1,6 @@
 import { NextResponse } from "next/server";
-import {
-  addMessage,
-  createServerClient,
-  getPendingToolCall,
-  updateToolCallStatus,
-} from "@agents/db";
-import { executeApprovedToolCall, runAgent } from "@agents/agent";
+import { createServerClient, getPendingToolCall } from "@agents/db";
+import { AlreadyResolvedError, runAgent } from "@agents/agent";
 import { loadIntegrationsContext } from "@/lib/agent/integrations-context";
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN ?? "";
@@ -125,49 +120,38 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: true });
     }
 
-    if (action === "reject") {
-      await updateToolCallStatus(db, pending.id, "rejected");
-      await addMessage(db, pending.session_id, "assistant", "Acción cancelada a petición del usuario.");
-      await answerCallbackQuery(cb.id, "Rechazado");
-      await sendTelegramMessage(cb.message.chat.id, "Acción cancelada.");
+    // Resolve the graph by resuming the interrupted thread. This is the
+    // single execution path: rejection routes through the same node and
+    // produces a coherent ToolMessage that the model can reason about.
+    const integrationsContext = await loadIntegrationsContext(db, userId);
+    const { data: profile } = await db
+      .from("profiles")
+      .select("agent_system_prompt")
+      .eq("id", userId)
+      .single();
+    const { data: toolSettings } = await db
+      .from("user_tool_settings")
+      .select("*")
+      .eq("user_id", userId);
+    const { data: integrations } = await db
+      .from("user_integrations")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("status", "active");
+
+    if (!pending.thread_id) {
+      await answerCallbackQuery(cb.id, "Esta acción ya no se puede reanudar.");
       return NextResponse.json({ ok: true });
     }
 
-    // approve: decrypt the token, execute the real tool, then re-invoke the agent
-    // so it can summarise in its own voice.
-    const integrationsContext = await loadIntegrationsContext(db, userId);
     try {
-      const execution = await executeApprovedToolCall({
-        toolName: pending.tool_name,
-        args: pending.arguments_json ?? {},
-        integrationsContext,
-      });
-      await updateToolCallStatus(db, pending.id, "executed", execution.result);
-      await answerCallbackQuery(cb.id, "Aprobado");
-
-      // Re-invoke agent for a natural summary.
-      const { data: profile } = await db
-        .from("profiles")
-        .select("agent_system_prompt")
-        .eq("id", userId)
-        .single();
-      const { data: toolSettings } = await db
-        .from("user_tool_settings")
-        .select("*")
-        .eq("user_id", userId);
-      const { data: integrations } = await db
-        .from("user_integrations")
-        .select("*")
-        .eq("user_id", userId)
-        .eq("status", "active");
-
-      const followUp = `Acabo de aprobar y el sistema ejecutó "${pending.tool_name}" con éxito. Resultado: ${execution.summary}. Resume brevemente al usuario lo que ocurrió.`;
-
       const result = await runAgent({
-        message: followUp,
+        resumeDecision: action === "approve" ? "approve" : "reject",
+        threadId: pending.thread_id,
         userId,
         sessionId: pending.session_id,
-        systemPrompt: (profile?.agent_system_prompt as string) ?? "Eres un asistente útil.",
+        systemPrompt:
+          (profile?.agent_system_prompt as string) ?? "Eres un asistente útil.",
         db,
         enabledTools: (toolSettings ?? []).map((t: Record<string, unknown>) => ({
           id: t.id as string,
@@ -187,16 +171,21 @@ export async function POST(request: Request) {
         integrationsContext,
       });
 
-      await sendTelegramMessage(cb.message.chat.id, result.response ?? execution.summary);
+      await answerCallbackQuery(cb.id, action === "approve" ? "Aprobado" : "Rechazado");
+      if (result.response) {
+        await sendTelegramMessage(cb.message.chat.id, result.response);
+      }
     } catch (err) {
-      await updateToolCallStatus(db, pending.id, "failed", {
-        error: err instanceof Error ? err.message : String(err),
-      });
-      await answerCallbackQuery(cb.id, "Falló la ejecución");
-      await sendTelegramMessage(
-        cb.message.chat.id,
-        "No se pudo ejecutar la acción. Revisa la integración de GitHub e inténtalo de nuevo."
-      );
+      if (err instanceof AlreadyResolvedError) {
+        await answerCallbackQuery(cb.id, "Esta acción ya fue resuelta.");
+      } else {
+        console.error("Telegram resume error:", err);
+        await answerCallbackQuery(cb.id, "Falló la ejecución");
+        await sendTelegramMessage(
+          cb.message.chat.id,
+          "No se pudo procesar la acción. Intenta de nuevo.",
+        );
+      }
     }
 
     return NextResponse.json({ ok: true });
