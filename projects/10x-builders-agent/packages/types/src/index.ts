@@ -66,6 +66,8 @@ export interface ToolCall {
   result_json?: Record<string, unknown>;
   status: "pending_confirmation" | "approved" | "rejected" | "executed" | "failed";
   requires_confirmation: boolean;
+  /** LangGraph checkpoint thread; populated for medium/high-risk pendings. */
+  thread_id?: string | null;
   created_at: string;
   finished_at?: string;
 }
