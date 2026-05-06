@@ -1,8 +1,14 @@
 import { tool } from "@langchain/core/tools";
+import { createPatch } from "diff";
 import { z } from "zod";
 import type { DbClient } from "@agents/db";
 import type { UserToolSetting, UserIntegration } from "@agents/types";
-import { TOOL_CATALOG } from "./catalog";
+import {
+  EDIT_FILE_DESCRIPTION,
+  READ_FILE_DESCRIPTION,
+  TOOL_CATALOG,
+  WRITE_FILE_DESCRIPTION,
+} from "./catalog";
 import { createToolCall, updateToolCallStatus } from "@agents/db";
 import type { IntegrationsContext } from "../types";
 import {
@@ -21,6 +27,7 @@ import {
   updateEvent,
 } from "../integrations/google-calendar";
 import { isBashToolAllowed, runBash } from "./bash-exec";
+import { editFileExact, isFileToolsAllowed, readFileSafe, writeFileNew } from "./file-ops";
 
 interface ToolContext {
   db: DbClient;
@@ -204,7 +211,35 @@ export async function summariseToolCall(
     return `Ejecutar comando bash${cwd}: ${cmdShort}`;
   }
 
+  if (toolName === "edit_file") {
+    const filePath = String(args.path ?? "");
+    const oldStr = String(args.old_string ?? "");
+    const newStr = String(args.new_string ?? "");
+    return `Editar ${filePath}:\n\n${renderEditDiff(filePath, oldStr, newStr)}`;
+  }
+
   return `Ejecutar ${toolName}.`;
+}
+
+/**
+ * Renderiza un mini-diff unificado tipo `git diff` con 3 líneas de contexto.
+ * Trunca cada línea a 200 chars y el bloque total a 40 líneas para que la
+ * tarjeta de confirmación siga siendo legible cuando el cambio es grande.
+ * El bloque va envuelto en ```diff para que web (con highlight) y Telegram
+ * (que respeta fences markdown) lo rendericen igual.
+ */
+function renderEditDiff(filePath: string, oldStr: string, newStr: string): string {
+  const patch = createPatch(filePath, oldStr, newStr, "", "", { context: 3 });
+  // createPatch incluye headers "Index:", "===", "---", "+++" que no son útiles
+  // en una tarjeta de confirmación. Saltamos las primeras 4 líneas.
+  const body = patch.split("\n").slice(4);
+  const truncatedLines = body.map((l) => (l.length > 200 ? l.slice(0, 200) + "…" : l));
+  const MAX_LINES = 40;
+  const blockLines =
+    truncatedLines.length > MAX_LINES
+      ? [...truncatedLines.slice(0, MAX_LINES), `… (${truncatedLines.length - MAX_LINES} líneas más)`]
+      : truncatedLines;
+  return ["```diff", ...blockLines, "```"].join("\n");
 }
 
 export function buildLangChainTools(ctx: ToolContext) {
@@ -629,6 +664,134 @@ export function buildLangChainTools(ctx: ToolContext) {
           schema: z.object({
             command: z.string().min(1),
             cwd: z.string().nullable().optional(),
+          }),
+        },
+      ),
+    );
+  }
+
+  if (isFileToolsAllowed() && isToolAvailable("read_file", ctx)) {
+    tools.push(
+      tool(
+        async (input) => {
+          const record = await createToolCall(
+            ctx.db,
+            ctx.sessionId,
+            "read_file",
+            input as Record<string, unknown>,
+            false,
+          );
+          try {
+            const result = await readFileSafe(
+              input.path,
+              input.offset ?? undefined,
+              input.limit ?? undefined,
+            );
+            await updateToolCallStatus(
+              ctx.db,
+              record.id,
+              result.ok ? "executed" : "failed",
+              result.ok ? { total_lines: result.total_lines } : { error: result.code },
+            );
+            return JSON.stringify(result);
+          } catch (e) {
+            await updateToolCallStatus(ctx.db, record.id, "failed", {
+              error: e instanceof Error ? e.message : String(e),
+            });
+            throw e;
+          }
+        },
+        {
+          name: "read_file",
+          description: READ_FILE_DESCRIPTION,
+          schema: z.object({
+            path: z
+              .string()
+              .min(1)
+              .describe(
+                "Path absoluto preferido; relativos solo si hay FILE_TOOLS_WORKSPACE_ROOT.",
+              ),
+            offset: z
+              .number()
+              .int()
+              .min(1)
+              .nullable()
+              .optional()
+              .describe("Línea inicial 1-indexed; default 1."),
+            limit: z
+              .number()
+              .int()
+              .min(1)
+              .max(5000)
+              .nullable()
+              .optional()
+              .describe("Líneas máximas a devolver; default archivo completo."),
+          }),
+        },
+      ),
+    );
+  }
+
+  if (isFileToolsAllowed() && isToolAvailable("write_file", ctx)) {
+    tools.push(
+      tool(
+        async (input) => {
+          const record = await createToolCall(
+            ctx.db,
+            ctx.sessionId,
+            "write_file",
+            { path: input.path, bytes: Buffer.byteLength(input.content, "utf-8") },
+            false,
+          );
+          try {
+            const result = await writeFileNew(input.path, input.content);
+            await updateToolCallStatus(
+              ctx.db,
+              record.id,
+              result.ok ? "executed" : "failed",
+              result.ok
+                ? { path: result.path, bytes_written: result.bytes_written }
+                : { error: result.code },
+            );
+            return JSON.stringify(result);
+          } catch (e) {
+            await updateToolCallStatus(ctx.db, record.id, "failed", {
+              error: e instanceof Error ? e.message : String(e),
+            });
+            throw e;
+          }
+        },
+        {
+          name: "write_file",
+          description: WRITE_FILE_DESCRIPTION,
+          schema: z.object({
+            path: z.string().min(1).describe("Path absoluto del archivo nuevo a crear."),
+            content: z.string().describe("Contenido literal UTF-8."),
+          }),
+        },
+      ),
+    );
+  }
+
+  if (isFileToolsAllowed() && isToolAvailable("edit_file", ctx)) {
+    tools.push(
+      tool(
+        async (input) => {
+          const result = await editFileExact(input.path, input.old_string, input.new_string);
+          return JSON.stringify(result);
+        },
+        {
+          name: "edit_file",
+          description: EDIT_FILE_DESCRIPTION,
+          schema: z.object({
+            path: z.string().min(1).describe("Ruta del archivo existente."),
+            old_string: z
+              .string()
+              .min(1)
+              .describe("Texto literal a buscar; debe ser único en el archivo."),
+            new_string: z
+              .string()
+              .describe("Texto de reemplazo (cadena vacía para borrar el match)."),
           }),
         },
       ),

@@ -26,6 +26,9 @@ const TOOL_IDS = [
   "gcal_update_event",
   "gcal_delete_event",
   "bash",
+  "read_file",
+  "write_file",
+  "edit_file",
 ];
 
 export function SettingsForm({

@@ -7,15 +7,17 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
+    "@agents/db": "*",
+    "@agents/types": "*",
     "@langchain/core": "^0.3",
     "@langchain/langgraph": "^0.2",
     "@langchain/langgraph-checkpoint-postgres": "^0.0.5",
     "@langchain/openai": "^0.4",
-    "@agents/db": "*",
-    "@agents/types": "*",
+    "diff": "^9.0.0",
     "zod": "^3"
   },
   "devDependencies": {
+    "@types/diff": "^7.0.2",
     "typescript": "^5"
   }
 }

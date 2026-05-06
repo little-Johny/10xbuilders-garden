@@ -43,6 +43,27 @@ const AVAILABLE_TOOLS = [
     risk: "medium" as const,
     requiresIntegration: "github",
   },
+  {
+    id: "read_file",
+    name: "Leer archivo",
+    description: "Lee el contenido de un archivo de texto UTF-8 en el servidor.",
+    risk: "low" as const,
+    requiresIntegration: null,
+  },
+  {
+    id: "write_file",
+    name: "Crear archivo",
+    description: "Crea un archivo nuevo con el contenido dado (no sobrescribe).",
+    risk: "low" as const,
+    requiresIntegration: null,
+  },
+  {
+    id: "edit_file",
+    name: "Editar archivo",
+    description: "Reemplaza una ocurrencia exacta en un archivo existente (requiere confirmación).",
+    risk: "high" as const,
+    requiresIntegration: null,
+  },
 ];
 
 const RISK_LABELS = {
