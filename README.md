@@ -13,6 +13,7 @@ Repositorio personal de apuntes, conceptos, entregables y herramientas del curso
 ├── week-02/           # Semana 2 — Reglas, skills, MCPs y subagentes
 ├── week-03/           # Semana 3 — Agentes autónomos y LangChain
 ├── week-04/           # Semana 4 — Arquitectura de agente multicanal con Turborepo y LangGraph
+├── week-05/           # Semana 5 — Diseño de tools, estado en LangGraph y human-in-the-loop
 ├── ia-tools/          # Agentes, skills y artefactos de planificación transversales
 ├── projects/          # Código de práctica y laboratorios
 ├── .claude/           # Agentes y skills para Claude Code (mirrors de ia-tools/)
@@ -35,6 +36,7 @@ En `week-XX/`, los archivos siguen `NN-nombre-descriptivo.md` (número de lecci�
 | 2      | `week-02/` | Lecciones 1–10 + reflexión |
 | 3      | `week-03/` | Lecciones 1–5 + reflexión |
 | 4      | `week-04/` | Lecciones 1–4 |
+| 5      | `week-05/` | Lecciones 1–3 |
 
 ---
 
