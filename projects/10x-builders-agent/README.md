@@ -89,6 +89,10 @@ Next.js carga `.env*` desde el directorio de la app **`apps/web`**, no desde la 
    | `NEXT_PUBLIC_APP_URL` | *(Opcional)* URL base de la app (default: `http://localhost:3000`). Necesario para el callback de GitHub y Google OAuth |
    | `TELEGRAM_BOT_TOKEN` | *(Opcional)* Token del bot de Telegram |
    | `TELEGRAM_WEBHOOK_SECRET` | *(Opcional)* Secreto para validar webhooks de Telegram |
+   | `ALLOW_BASH_TOOL` | *(Opcional, gate)* `true`/`1` para exponer la tool `bash` (riesgo alto, HITL). Sin esta variable la tool **no se registra** aunque el usuario la tenga habilitada. Diseño en [docs/bash-tool-plan.md](docs/bash-tool-plan.md) |
+   | `ALLOW_FILE_TOOLS` | *(Opcional, gate)* `true`/`1` para exponer las tools `read_file`, `write_file` y `edit_file`. Sin esta variable las tres tools **no se registran**. Diseño en [docs/file_tools_plan.md](docs/file_tools_plan.md) |
+   | `FILE_TOOLS_WORKSPACE_ROOT` | *(Opcional)* Si se define, las file tools confinan toda ruta dentro de ese root y aceptan paths relativos resueltos contra él. Sin definir, solo se aceptan paths absolutos y el alcance lo dictan los permisos del proceso (úsalo solo en entornos confiables) |
+   | `FILE_TOOL_MAX_BYTES` | *(Opcional)* Cap defensivo de bytes para `read_file`/`write_file`/`edit_file`. Default `1000000` |
 
 Referencia de nombres: [.env.example](.env.example).
 
@@ -188,6 +192,55 @@ Después de vincular, los mensajes al bot usan el mismo pipeline que el chat web
 
 ---
 
+## Paso 11 — Tareas programadas (opcional)
+
+Permite que el agente ejecute prompts de forma recurrente. Documentación completa en [docs/scheduled-tasks.md](docs/scheduled-tasks.md).
+
+### Variables de entorno
+
+```env
+# apps/web/.env.local
+ALLOW_SCHEDULED_TASKS_TOOL=true
+CRON_SECRET=  # openssl rand -hex 32
+```
+
+### Habilitar pg_cron en Supabase
+
+1. **Dashboard → Database → Extensions**: activar `pg_cron` y `pg_net`.
+2. **Dashboard → SQL Editor**, ejecutar **una sola vez**:
+
+   ```sql
+   select cron.schedule(
+     'scheduled-tasks-tick',
+     '* * * * *',
+     $$
+       select net.http_post(
+         url     := 'https://TU_DOMINIO/api/scheduled-tasks/tick',
+         headers := jsonb_build_object(
+                      'Content-Type', 'application/json',
+                      'x-cron-secret', 'PEGAR_AQUI_EL_VALOR_DE_CRON_SECRET'
+                    ),
+         body    := '{}'::jsonb
+       ) as request_id;
+     $$
+   );
+   ```
+
+   En dev local, `TU_DOMINIO` es la URL pública del túnel ngrok.
+
+3. Verifica que el job está activo:
+
+   ```sql
+   select * from cron.job;
+   select * from cron.job_run_details order by start_time desc limit 5;
+   ```
+
+4. Prueba creando una tarea desde el chat: *"programa una tarea cada minuto que me diga 'ping'"*. Aprueba la tarjeta HITL y espera al siguiente minuto.
+
+Para apagar: `select cron.unschedule('scheduled-tasks-tick');`. Detalles operativos (rotación del secret, debug de disparos, modo `autonomous`) en [docs/scheduled-tasks.md](docs/scheduled-tasks.md).
+
+---
+
 ## Comandos útiles
 
 | Comando | Descripción |
@@ -205,6 +258,14 @@ Después de vincular, los mensajes al bot usan el mismo pipeline que el chat web
 - [docs/architecture.md](docs/architecture.md) — arquitectura técnica del MVP.
 - [docs/plan.md](docs/plan.md) — fases y decisiones de implementación.
 - [docs/github-integration.md](docs/github-integration.md) — diseño de la integración de GitHub (OAuth, cifrado, confirmaciones).
+- [docs/calendar-integration.md](docs/calendar-integration.md) — diseño de la integración de Google Calendar (OAuth, refresh, recurrencias).
+- [docs/calendar-integration-brief.md](docs/calendar-integration-brief.md) — brief inicial de la integración de Google Calendar.
+- [docs/calendar-integration-plan.md](docs/calendar-integration-plan.md) — plan de implementación de Google Calendar.
+- [docs/hitl-plan.md](docs/hitl-plan.md) — plan del flujo human-in-the-loop con `interrupt()`.
+- [docs/bash-tool-plan.md](docs/bash-tool-plan.md) — plan de la tool `bash` (gate `ALLOW_BASH_TOOL`, HITL).
+- [docs/file_tools_plan.md](docs/file_tools_plan.md) — plan de las file tools `read_file`/`write_file`/`edit_file` (gate `ALLOW_FILE_TOOLS`, sandbox opcional).
+- [docs/scheduled-tasks-plan.md](docs/scheduled-tasks-plan.md) — plan de tareas programadas (decisiones, schema, trade-offs).
+- [docs/scheduled-tasks.md](docs/scheduled-tasks.md) — guía de uso, setup de pg_cron y operación de tareas programadas.
 - [CHANGELOG.md](CHANGELOG.md) — historial de cambios.
 
 ---
