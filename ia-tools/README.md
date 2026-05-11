@@ -1,13 +1,12 @@
 # ia-tools — Herramientas IA del Repositorio
 
-Directorio transversal que contiene los agentes, skills y artefactos de planificación utilizados en todo el repositorio. Los directorios `.claude/` y `.cursor/` en la raíz son mirrors de estos archivos para que cada IDE los descubra automáticamente.
+Directorio transversal que contiene los skills y artefactos de planificación utilizados en todo el repositorio. Los directorios `.claude/` y `.cursor/` en la raíz son mirrors de estos archivos para que cada IDE los descubra automáticamente.
 
 ## Estructura
 
 ```
 ia-tools/
-├── agents/                  # Definiciones de agentes
-│   └── candace.md           # Agente de documentación interna
+├── agents/                  # Definiciones de agentes (sin agentes activos)
 ├── planning/                # Artefactos de planificación
 │   ├── master-protocol-preview.md
 │   ├── master-technical-brief.md
@@ -15,20 +14,17 @@ ia-tools/
 │       ├── brief-agent-docs-manager.md
 │       └── brief-skill-documenting-repository.md
 └── skills/                  # Skills reutilizables
+    ├── candace-skill/
+    │   └── SKILL.md         # Genera y actualiza documentación .md del repo
     └── commit-organizer/
         └── SKILL.md         # Organiza y agrupa commits con Conventional Commits
 ```
-
-## Agentes
-
-| Agente | Archivo | Descripción |
-|--------|---------|-------------|
-| candace | [agents/candace.md](agents/candace.md) | Documentación interna del repo: detecta docs faltantes, genera/actualiza READMEs e índices |
 
 ## Skills
 
 | Skill | Archivo | Descripción |
 |-------|---------|-------------|
+| candace-skill | [skills/candace-skill/SKILL.md](skills/candace-skill/SKILL.md) | Genera y actualiza documentación `.md` del repo: apuntes en `week-XX/`, READMEs, índices |
 | commit-organizer | [skills/commit-organizer/SKILL.md](skills/commit-organizer/SKILL.md) | Analiza cambios staged/unstaged, agrupa por temática y propone commits organizados |
 
 ## Planning
