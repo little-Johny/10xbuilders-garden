@@ -1,5 +1,6 @@
 import { HumanMessage, AIMessage } from '@langchain/core/messages';
 import { buildAgentExecutor } from './createAgent.js';
+import { formatDateIso, formatWeekdayEs } from '../cli/formatters.js';
 
 /**
  * @typedef {object} AgentInvoker
@@ -31,7 +32,9 @@ import { buildAgentExecutor } from './createAgent.js';
 export async function runAgent(input, options = {}) {
   const executor = options.executor ?? (await buildAgentExecutor(options.verbose));
   const history = options.history ?? [];
-  const result = await executor.invoke({ input, chat_history: history });
+  const today = formatDateIso(undefined);
+  const weekdayToday = formatWeekdayEs(undefined);
+  const result = await executor.invoke({ input, chat_history: history, today, weekdayToday });
   const output = String(result.output ?? '');
   const nextHistory = [...history, new HumanMessage(input), new AIMessage(output)];
   return { output, history: nextHistory };

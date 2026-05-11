@@ -112,7 +112,7 @@ describe('appendRow', () => {
     expect(mock.update).not.toHaveBeenCalled();
     const args = mock.append.mock.calls[0][0];
     expect(args.range.startsWith('progress_tracker!')).toBe(true);
-    expect(args.valueInputOption).toBe('USER_ENTERED');
+    expect(args.valueInputOption).toBe('RAW');
     expect(args.requestBody.values[0]).toEqual([
       '2026-04-20',
       'Lunes',

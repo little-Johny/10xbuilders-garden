@@ -168,7 +168,7 @@ export async function appendRow(payload) {
     sheets.spreadsheets.values.append({
       spreadsheetId,
       range: `${sheetName}!A:Z`,
-      valueInputOption: 'USER_ENTERED',
+      valueInputOption: 'RAW',
       insertDataOption: 'INSERT_ROWS',
       requestBody: { values: [row] },
     }),
