@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createServerClient, getPendingToolCall } from "@agents/db";
 import { AlreadyResolvedError, runAgent } from "@agents/agent";
-import { loadIntegrationsContext } from "@/lib/agent/integrations-context";
+import { loadAgentContext } from "@/lib/agent/load-context";
 
 export async function POST(request: Request) {
   try {
@@ -39,25 +39,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const integrationsContext = await loadIntegrationsContext(db, user.id);
-
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("agent_system_prompt")
-      .eq("id", user.id)
-      .single();
-
-    const { data: toolSettings } = await supabase
-      .from("user_tool_settings")
-      .select("*")
-      .eq("user_id", user.id);
-
-    const { data: integrations } = await supabase
-      .from("user_integrations")
-      .select("*")
-      .eq("user_id", user.id)
-      .eq("status", "active");
-
     if (!pending.thread_id) {
       // Legacy pending row from before per-turn thread_ids landed. Cannot be
       // resumed via LangGraph; surface the same 409 the UI already handles.
@@ -67,31 +48,19 @@ export async function POST(request: Request) {
       );
     }
 
+    const ctx = await loadAgentContext(db, user.id);
+
     try {
       const result = await runAgent({
         resumeDecision: decision === "approve" ? "approve" : "reject",
         threadId: pending.thread_id,
         userId: user.id,
         sessionId: pending.session_id,
-        systemPrompt:
-          (profile?.agent_system_prompt as string) ?? "Eres un asistente útil.",
+        systemPrompt: ctx.systemPrompt,
         db,
-        enabledTools: (toolSettings ?? []).map((t: Record<string, unknown>) => ({
-          id: t.id as string,
-          user_id: t.user_id as string,
-          tool_id: t.tool_id as string,
-          enabled: t.enabled as boolean,
-          config_json: (t.config_json as Record<string, unknown>) ?? {},
-        })),
-        integrations: (integrations ?? []).map((i: Record<string, unknown>) => ({
-          id: i.id as string,
-          user_id: i.user_id as string,
-          provider: i.provider as string,
-          scopes: (i.scopes as string[]) ?? [],
-          status: i.status as "active" | "revoked" | "expired",
-          created_at: i.created_at as string,
-        })),
-        integrationsContext,
+        enabledTools: ctx.toolSettings,
+        integrations: ctx.integrations,
+        integrationsContext: ctx.integrationsContext,
       });
 
       return NextResponse.json({

@@ -274,7 +274,105 @@ export const TOOL_CATALOG: ToolDefinition[] = [
       required: ["path", "old_string", "new_string"],
     },
   },
+  {
+    id: "create_scheduled_task",
+    name: "create_scheduled_task",
+    description:
+      "Crea una tarea recurrente que el agente ejecutará automáticamente. La 'description' debe ser un PROMPT en lenguaje natural que el agente recibirá como mensaje del usuario cada vez que se dispare (p.ej. 'resúmeme mis issues abiertos en GitHub'). cron_expression usa formato estándar de 5 campos (minuto hora día-mes mes día-semana). Si el usuario dice 'mañana' o 'cada lunes', usa la fecha y zona horaria del contexto temporal del system prompt para resolverlo. autonomous=true ejecuta sin pedir confirmación al disparar; usa false (default) para tareas que invocan acciones medium/high. Requiere confirmación del usuario.",
+    risk: "medium",
+    parameters_schema: {
+      type: "object",
+      properties: {
+        name: { type: "string", description: "Nombre corto descriptivo (ej. 'Resumen de issues')." },
+        description: {
+          type: "string",
+          description:
+            "Prompt natural que el agente recibirá como mensaje cuando se dispare la tarea.",
+        },
+        cron_expression: {
+          type: "string",
+          description: "Cron 5-campos. Ej: '0 9 * * 1' = lunes 9am.",
+        },
+        timezone: {
+          type: "string",
+          description: "IANA timezone (ej. America/Bogota). Default: la del perfil del usuario.",
+        },
+        start_at: {
+          type: "string",
+          description: "RFC3339; la tarea no se dispara antes de esta fecha. Opcional.",
+        },
+        end_at: {
+          type: "string",
+          description: "RFC3339; la tarea deja de dispararse después de esta fecha. Opcional.",
+        },
+        autonomous: {
+          type: "boolean",
+          description: "Si true, ejecuta sin HITL en cada disparo. Default: false.",
+        },
+        notification_channels: {
+          type: "array",
+          items: { type: "string", enum: ["telegram"] },
+          description: "Canales de notificación. Default: ['telegram'].",
+        },
+      },
+      required: ["name", "description", "cron_expression"],
+    },
+  },
+  {
+    id: "list_scheduled_tasks",
+    name: "list_scheduled_tasks",
+    description:
+      "Lista las tareas programadas del usuario. Útil para mostrar lo agendado, encontrar el id de una tarea antes de eliminarla, o auditar qué hay en cola.",
+    risk: "low",
+    parameters_schema: {
+      type: "object",
+      properties: {
+        status: {
+          type: "string",
+          enum: ["active", "paused", "completed", "failed"],
+          description: "Filtrar por estado. Opcional.",
+        },
+      },
+      required: [],
+    },
+  },
+  {
+    id: "update_scheduled_task",
+    name: "update_scheduled_task",
+    description:
+      "Activa o desactiva una tarea programada sin eliminarla. Usa enabled=false para PAUSAR (la tarea deja de dispararse pero conserva su historial, last_execution y configuración) y enabled=true para REANUDARLA. Para borrar permanentemente usa delete_scheduled_task. Antes de llamar a esta tool usa list_scheduled_tasks para confirmar el id correcto. Requiere confirmación del usuario.",
+    risk: "medium",
+    parameters_schema: {
+      type: "object",
+      properties: {
+        task_id: { type: "string", description: "UUID de la tarea." },
+        enabled: {
+          type: "boolean",
+          description: "true = reanudar; false = pausar.",
+        },
+      },
+      required: ["task_id", "enabled"],
+    },
+  },
+  {
+    id: "delete_scheduled_task",
+    name: "delete_scheduled_task",
+    description:
+      "Elimina permanentemente una tarea programada por su id. Antes de llamar a esta tool, usa list_scheduled_tasks para confirmar el id correcto. Requiere confirmación del usuario.",
+    risk: "high",
+    parameters_schema: {
+      type: "object",
+      properties: {
+        task_id: { type: "string", description: "UUID de la tarea a eliminar." },
+      },
+      required: ["task_id"],
+    },
+  },
 ];
+
+export function isScheduledTasksToolAllowed(): boolean {
+  return process.env.ALLOW_SCHEDULED_TASKS_TOOL === "true";
+}
 
 export function getToolRisk(toolId: string): ToolRisk {
   return TOOL_CATALOG.find((t) => t.id === toolId)?.risk ?? "high";

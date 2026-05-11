@@ -1,6 +1,33 @@
-export type Channel = "web" | "telegram";
+export type Channel = "web" | "telegram" | "scheduled";
 
 export type ToolRisk = "low" | "medium" | "high";
+
+export type NotificationChannel = "telegram";
+
+export type ScheduledTaskStatus = "active" | "paused" | "completed" | "failed";
+
+export interface ScheduledTask {
+  id: string;
+  user_id: string;
+  name: string;
+  description: string;
+  cron_expression: string;
+  /** IANA timezone; null falls back to the user's profile timezone. */
+  timezone: string | null;
+  start_at: string | null;
+  end_at: string | null;
+  last_execution: string | null;
+  /** Pre-computed next fire time so /tick can skip a full table scan. */
+  next_execution: string | null;
+  enabled: boolean;
+  /** When true, the cron-fired run skips HITL interrupts. */
+  autonomous: boolean;
+  notification_channels: NotificationChannel[];
+  status: ScheduledTaskStatus;
+  failure_count: number;
+  created_at: string;
+  updated_at: string;
+}
 
 export interface Profile {
   id: string;

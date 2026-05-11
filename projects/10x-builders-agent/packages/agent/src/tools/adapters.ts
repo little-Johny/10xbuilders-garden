@@ -5,11 +5,23 @@ import type { DbClient } from "@agents/db";
 import type { UserToolSetting, UserIntegration } from "@agents/types";
 import {
   EDIT_FILE_DESCRIPTION,
+  isScheduledTasksToolAllowed,
   READ_FILE_DESCRIPTION,
   TOOL_CATALOG,
   WRITE_FILE_DESCRIPTION,
 } from "./catalog";
-import { createToolCall, updateToolCallStatus } from "@agents/db";
+import {
+  createScheduledTask,
+  createToolCall,
+  deleteScheduledTask,
+  getProfile,
+  getScheduledTask,
+  listScheduledTasks,
+  setScheduledTaskEnabled,
+  updateToolCallStatus,
+} from "@agents/db";
+import { evaluateCron } from "./cron-utils";
+import type { NotificationChannel } from "@agents/types";
 import type { IntegrationsContext } from "../types";
 import {
   createIssue,
@@ -216,6 +228,35 @@ export async function summariseToolCall(
     const oldStr = String(args.old_string ?? "");
     const newStr = String(args.new_string ?? "");
     return `Editar ${filePath}:\n\n${renderEditDiff(filePath, oldStr, newStr)}`;
+  }
+
+  if (toolName === "create_scheduled_task") {
+    const name = String(args.name ?? "(sin nombre)");
+    const expr = String(args.cron_expression ?? "");
+    const tz = (args.timezone as string | undefined) ?? "(perfil)";
+    const autonomous = args.autonomous === true ? "sí" : "no";
+    let humanLine = "";
+    let nextLine = "";
+    try {
+      const ev = evaluateCron(expr, {
+        from: new Date(),
+        timezone: typeof args.timezone === "string" ? args.timezone : undefined,
+      });
+      humanLine = ` (${ev.human})`;
+      nextLine = `\nPróxima ejecución: ${ev.nextIso}.`;
+    } catch (err) {
+      humanLine = ` ⚠️ expresión inválida: ${err instanceof Error ? err.message : String(err)}`;
+    }
+    return `Programar tarea «${name}» con expresión "${expr}"${humanLine}.\nDescripción: ${String(args.description ?? "")}\nZona: ${tz}. Autónoma: ${autonomous}.${nextLine}`;
+  }
+
+  if (toolName === "update_scheduled_task") {
+    const action = args.enabled === true ? "Reanudar" : "Pausar";
+    return `${action} tarea programada ${String(args.task_id ?? "")}. ${args.enabled ? "Volverá a dispararse según su cron." : "Dejará de dispararse hasta que la reanudes."}`;
+  }
+
+  if (toolName === "delete_scheduled_task") {
+    return `Eliminar tarea programada ${String(args.task_id ?? "")}. Esta acción es irreversible.`;
   }
 
   return `Ejecutar ${toolName}.`;
@@ -792,6 +833,216 @@ export function buildLangChainTools(ctx: ToolContext) {
             new_string: z
               .string()
               .describe("Texto de reemplazo (cadena vacía para borrar el match)."),
+          }),
+        },
+      ),
+    );
+  }
+
+  // -------------------------------------------------------------------------
+  // Scheduled tasks
+  //
+  // Risk: create=medium, list=low, delete=high. El tool de creación valida la
+  // cron_expression con cron-parser y precomputa next_execution antes de
+  // insertar para que el endpoint /tick pueda hacer queries baratas.
+  // -------------------------------------------------------------------------
+
+  if (isScheduledTasksToolAllowed() && isToolAvailable("create_scheduled_task", ctx)) {
+    tools.push(
+      tool(
+        async (input) => {
+          // Resolver TZ: explícita > perfil > UTC.
+          let timezone = input.timezone ?? null;
+          if (!timezone) {
+            try {
+              const profile = await getProfile(ctx.db, ctx.userId);
+              timezone = profile.timezone || "UTC";
+            } catch {
+              timezone = "UTC";
+            }
+          }
+
+          let evaluated;
+          try {
+            evaluated = evaluateCron(input.cron_expression, {
+              from: new Date(),
+              timezone: timezone ?? undefined,
+            });
+          } catch (err) {
+            return JSON.stringify({
+              ok: false,
+              error: err instanceof Error ? err.message : String(err),
+            });
+          }
+
+          const channels: NotificationChannel[] =
+            input.notification_channels && input.notification_channels.length > 0
+              ? (input.notification_channels as NotificationChannel[])
+              : ["telegram"];
+
+          const task = await createScheduledTask(ctx.db, ctx.userId, {
+            name: input.name,
+            description: input.description,
+            cron_expression: input.cron_expression,
+            timezone,
+            start_at: input.start_at ?? null,
+            end_at: input.end_at ?? null,
+            autonomous: input.autonomous ?? false,
+            notification_channels: channels,
+            next_execution: evaluated.nextIso,
+          });
+
+          return JSON.stringify({
+            ok: true,
+            task: {
+              id: task.id,
+              name: task.name,
+              cron_expression: task.cron_expression,
+              human: evaluated.human,
+              next_execution: task.next_execution,
+              autonomous: task.autonomous,
+              timezone: task.timezone,
+            },
+          });
+        },
+        {
+          name: "create_scheduled_task",
+          description:
+            "Crea una tarea recurrente. Valida la cron_expression y devuelve el id + próxima ejecución calculada. Requiere confirmación del usuario (gestionada por el grafo).",
+          schema: z.object({
+            name: z.string().min(1),
+            description: z.string().min(1),
+            cron_expression: z.string().min(1),
+            timezone: z.string().nullable().optional(),
+            start_at: z.string().nullable().optional(),
+            end_at: z.string().nullable().optional(),
+            autonomous: z.boolean().nullable().optional().default(false),
+            notification_channels: z
+              .array(z.enum(["telegram"]))
+              .nullable()
+              .optional(),
+          }),
+        },
+      ),
+    );
+  }
+
+  if (isScheduledTasksToolAllowed() && isToolAvailable("list_scheduled_tasks", ctx)) {
+    tools.push(
+      tool(
+        async (input) => {
+          const record = await createToolCall(
+            ctx.db,
+            ctx.sessionId,
+            "list_scheduled_tasks",
+            input as Record<string, unknown>,
+            false,
+          );
+          try {
+            const tasks = await listScheduledTasks(ctx.db, ctx.userId, {
+              status: input.status ?? undefined,
+            });
+            const trimmed = tasks.map((t) => ({
+              id: t.id,
+              name: t.name,
+              description: t.description,
+              cron_expression: t.cron_expression,
+              timezone: t.timezone,
+              next_execution: t.next_execution,
+              last_execution: t.last_execution,
+              enabled: t.enabled,
+              autonomous: t.autonomous,
+              status: t.status,
+              failure_count: t.failure_count,
+            }));
+            await updateToolCallStatus(ctx.db, record.id, "executed", {
+              count: trimmed.length,
+            });
+            return JSON.stringify({ tasks: trimmed });
+          } catch (e) {
+            await updateToolCallStatus(ctx.db, record.id, "failed", {
+              error: e instanceof Error ? e.message : String(e),
+            });
+            throw e;
+          }
+        },
+        {
+          name: "list_scheduled_tasks",
+          description: "Lista las tareas programadas del usuario, opcionalmente filtradas por status.",
+          schema: z.object({
+            status: z
+              .enum(["active", "paused", "completed", "failed"])
+              .nullable()
+              .optional(),
+          }),
+        },
+      ),
+    );
+  }
+
+  if (isScheduledTasksToolAllowed() && isToolAvailable("update_scheduled_task", ctx)) {
+    tools.push(
+      tool(
+        async (input) => {
+          const existing = await getScheduledTask(ctx.db, input.task_id);
+          if (!existing || existing.user_id !== ctx.userId) {
+            return JSON.stringify({
+              ok: false,
+              error: "Tarea no encontrada o pertenece a otro usuario.",
+            });
+          }
+          if (existing.enabled === input.enabled) {
+            return JSON.stringify({
+              ok: true,
+              task_id: input.task_id,
+              enabled: input.enabled,
+              note: "La tarea ya estaba en ese estado; no se hicieron cambios.",
+            });
+          }
+          await setScheduledTaskEnabled(ctx.db, input.task_id, ctx.userId, input.enabled);
+          return JSON.stringify({
+            ok: true,
+            task_id: input.task_id,
+            enabled: input.enabled,
+          });
+        },
+        {
+          name: "update_scheduled_task",
+          description:
+            "Activa o desactiva una tarea programada por id, sin eliminarla. Requiere confirmación del usuario (gestionada por el grafo).",
+          schema: z.object({
+            task_id: z.string().uuid(),
+            enabled: z.boolean(),
+          }),
+        },
+      ),
+    );
+  }
+
+  if (isScheduledTasksToolAllowed() && isToolAvailable("delete_scheduled_task", ctx)) {
+    tools.push(
+      tool(
+        async (input) => {
+          // Verificar pertenencia antes de borrar: en el path HITL la tool corre
+          // post-aprobación con args confiables, pero un id de otro usuario
+          // podría llegar por error del modelo. El delete query también filtra
+          // por user_id como defensa en profundidad.
+          const existing = await getScheduledTask(ctx.db, input.task_id);
+          if (!existing || existing.user_id !== ctx.userId) {
+            return JSON.stringify({
+              ok: false,
+              error: "Tarea no encontrada o pertenece a otro usuario.",
+            });
+          }
+          await deleteScheduledTask(ctx.db, input.task_id, ctx.userId);
+          return JSON.stringify({ ok: true, deleted_task_id: input.task_id });
+        },
+        {
+          name: "delete_scheduled_task",
+          description:
+            "Elimina permanentemente una tarea programada. Requiere confirmación del usuario (gestionada por el grafo).",
+          schema: z.object({
+            task_id: z.string().uuid(),
           }),
         },
       ),

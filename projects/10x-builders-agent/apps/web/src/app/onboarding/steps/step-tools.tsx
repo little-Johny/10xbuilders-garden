@@ -64,6 +64,36 @@ const AVAILABLE_TOOLS = [
     risk: "high" as const,
     requiresIntegration: null,
   },
+  {
+    id: "create_scheduled_task",
+    name: "Programar tarea",
+    description:
+      "Crea tareas recurrentes que el agente ejecutará automáticamente con un cron (requiere confirmación).",
+    risk: "medium" as const,
+    requiresIntegration: null,
+  },
+  {
+    id: "list_scheduled_tasks",
+    name: "Listar tareas programadas",
+    description: "Muestra las tareas recurrentes que tienes agendadas.",
+    risk: "low" as const,
+    requiresIntegration: null,
+  },
+  {
+    id: "update_scheduled_task",
+    name: "Pausar/reanudar tarea",
+    description:
+      "Activa o desactiva una tarea programada sin eliminarla. Conserva su historial (requiere confirmación).",
+    risk: "medium" as const,
+    requiresIntegration: null,
+  },
+  {
+    id: "delete_scheduled_task",
+    name: "Eliminar tarea programada",
+    description: "Borra permanentemente una tarea agendada (requiere confirmación).",
+    risk: "high" as const,
+    requiresIntegration: null,
+  },
 ];
 
 const RISK_LABELS = {

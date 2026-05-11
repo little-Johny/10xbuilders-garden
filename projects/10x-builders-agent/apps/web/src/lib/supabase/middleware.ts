@@ -33,8 +33,13 @@ export async function updateSession(request: NextRequest) {
 
   const publicPaths = ["/login", "/signup", "/auth/callback"];
   const isPublic = publicPaths.some((p) => pathname.startsWith(p));
-  // Telegram calls the webhook without browser cookies; do not force login.
-  const isPublicApi = pathname.startsWith("/api/telegram/webhook");
+  // Endpoints invocados por servicios externos (Telegram, pg_cron) sin
+  // cookies de navegador. Cada uno se autentica con su propio mecanismo:
+  // - /api/telegram/webhook → header `x-telegram-bot-api-secret-token`
+  // - /api/scheduled-tasks/tick → header `x-cron-secret`
+  const isPublicApi =
+    pathname.startsWith("/api/telegram/webhook") ||
+    pathname.startsWith("/api/scheduled-tasks/tick");
 
   if (!user && !isPublic && !isPublicApi) {
     const url = request.nextUrl.clone();

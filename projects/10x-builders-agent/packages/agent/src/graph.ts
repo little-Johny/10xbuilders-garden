@@ -60,6 +60,13 @@ export interface AgentInput {
    * interrupt was taken on (read from the pending tool_call row).
    */
   threadId?: string;
+  /**
+   * Skip HITL interrupts: medium/high tools execute directly without asking
+   * for confirmation. Used by the scheduled-tasks tick for tasks marked
+   * `autonomous=true` — at creation time the user already approved that the
+   * agent should act unattended.
+   */
+  autonomous?: boolean;
 }
 
 export interface AgentOutput {
@@ -170,12 +177,32 @@ export async function runAgent(input: AgentInput): Promise<AgentOutput> {
       }
 
       const risk = getToolRisk(tc.name);
-      const requiresConfirmation = risk === "medium" || risk === "high";
+      const isMutating = risk === "medium" || risk === "high";
+      const requiresConfirmation = !input.autonomous && isMutating;
 
       if (!requiresConfirmation) {
+        // En modo autónomo + medium/high se ejecuta sin HITL pero queremos un
+        // registro auditable (la tool en sí no llama a createToolCall en ese
+        // path: ese contrato está documentado en adapters.ts). Para tools low,
+        // las propias adapters llevan su auditoría — no duplicamos aquí.
+        const args = (tc.args as Record<string, unknown>) ?? {};
+        const auditRow =
+          input.autonomous && isMutating
+            ? await createToolCall(db, sessionId, tc.name, args, false, threadId)
+            : null;
         try {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const result = await (matchingTool as any).invoke(tc.args);
+          if (auditRow) {
+            const resultStr = String(result);
+            let resultJson: Record<string, unknown>;
+            try {
+              resultJson = JSON.parse(resultStr) as Record<string, unknown>;
+            } catch {
+              resultJson = { result: resultStr };
+            }
+            await updateToolCallStatus(db, auditRow.id, "executed", resultJson);
+          }
           results.push(
             new ToolMessage({
               content: String(result),
@@ -184,6 +211,9 @@ export async function runAgent(input: AgentInput): Promise<AgentOutput> {
           );
         } catch (err) {
           const errMsg = err instanceof Error ? err.message : String(err);
+          if (auditRow) {
+            await updateToolCallStatus(db, auditRow.id, "failed", { error: errMsg });
+          }
           results.push(
             new ToolMessage({
               content: JSON.stringify({ error: errMsg }),

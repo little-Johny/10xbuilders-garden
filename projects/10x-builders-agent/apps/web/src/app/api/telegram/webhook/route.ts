@@ -1,10 +1,15 @@
 import { NextResponse } from "next/server";
 import { createServerClient, getPendingToolCall } from "@agents/db";
-import { AlreadyResolvedError, runAgent } from "@agents/agent";
-import { loadIntegrationsContext } from "@/lib/agent/integrations-context";
+import {
+  AlreadyResolvedError,
+  confirmationKeyboard,
+  runAgent,
+  sendTelegramMessage,
+} from "@agents/agent";
+import { loadAgentContext } from "@/lib/agent/load-context";
 
-const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN ?? "";
 const WEBHOOK_SECRET = process.env.TELEGRAM_WEBHOOK_SECRET ?? "";
+const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN ?? "";
 
 interface TelegramUpdate {
   update_id: number;
@@ -22,37 +27,6 @@ interface TelegramUpdate {
   };
 }
 
-async function sendTelegramMessage(
-  chatId: number,
-  text: string,
-  replyMarkup?: Record<string, unknown>
-) {
-  const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      chat_id: chatId,
-      text,
-      ...(replyMarkup ? { reply_markup: replyMarkup } : {}),
-    }),
-  });
-  const body = await res.json().catch(() => ({}));
-  if (!res.ok) {
-    console.error("Telegram sendMessage failed:", res.status, body);
-  }
-}
-
-function confirmationKeyboard(toolCallId: string) {
-  return {
-    inline_keyboard: [
-      [
-        { text: "Aprobar", callback_data: `approve:${toolCallId}` },
-        { text: "Cancelar", callback_data: `reject:${toolCallId}` },
-      ],
-    ],
-  };
-}
-
 /** Telegram sends "/cmd@BotName args" when the user picks a command from the menu. */
 function parseBotCommand(messageText: string): { command: string; args: string } {
   const trimmed = messageText.trim();
@@ -65,6 +39,7 @@ function parseBotCommand(messageText: string): { command: string; args: string }
 }
 
 async function answerCallbackQuery(callbackQueryId: string, text: string) {
+  if (!BOT_TOKEN) return;
   await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/answerCallbackQuery`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -91,7 +66,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: true });
     }
 
-    // Resolve user from telegram id and confirm the tool call belongs to them.
     const { data: telegramAccount } = await db
       .from("telegram_accounts")
       .select("*")
@@ -109,7 +83,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: true });
     }
 
-    // Ownership check against the session.
     const { data: session } = await db
       .from("agent_sessions")
       .select("user_id")
@@ -120,55 +93,23 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: true });
     }
 
-    // Resolve the graph by resuming the interrupted thread. This is the
-    // single execution path: rejection routes through the same node and
-    // produces a coherent ToolMessage that the model can reason about.
-    const integrationsContext = await loadIntegrationsContext(db, userId);
-    const { data: profile } = await db
-      .from("profiles")
-      .select("agent_system_prompt")
-      .eq("id", userId)
-      .single();
-    const { data: toolSettings } = await db
-      .from("user_tool_settings")
-      .select("*")
-      .eq("user_id", userId);
-    const { data: integrations } = await db
-      .from("user_integrations")
-      .select("*")
-      .eq("user_id", userId)
-      .eq("status", "active");
-
     if (!pending.thread_id) {
       await answerCallbackQuery(cb.id, "Esta acción ya no se puede reanudar.");
       return NextResponse.json({ ok: true });
     }
 
     try {
+      const ctx = await loadAgentContext(db, userId);
       const result = await runAgent({
         resumeDecision: action === "approve" ? "approve" : "reject",
         threadId: pending.thread_id,
         userId,
         sessionId: pending.session_id,
-        systemPrompt:
-          (profile?.agent_system_prompt as string) ?? "Eres un asistente útil.",
+        systemPrompt: ctx.systemPrompt,
         db,
-        enabledTools: (toolSettings ?? []).map((t: Record<string, unknown>) => ({
-          id: t.id as string,
-          user_id: t.user_id as string,
-          tool_id: t.tool_id as string,
-          enabled: t.enabled as boolean,
-          config_json: (t.config_json as Record<string, unknown>) ?? {},
-        })),
-        integrations: (integrations ?? []).map((i: Record<string, unknown>) => ({
-          id: i.id as string,
-          user_id: i.user_id as string,
-          provider: i.provider as string,
-          scopes: (i.scopes as string[]) ?? [],
-          status: i.status as "active" | "revoked" | "expired",
-          created_at: i.created_at as string,
-        })),
-        integrationsContext,
+        enabledTools: ctx.toolSettings,
+        integrations: ctx.integrations,
+        integrationsContext: ctx.integrationsContext,
       });
 
       await answerCallbackQuery(cb.id, action === "approve" ? "Aprobado" : "Rechazado");
@@ -204,7 +145,7 @@ export async function POST(request: Request) {
   if (command === "/start") {
     await sendTelegramMessage(
       chatId,
-      "¡Hola! Soy tu agente personal.\n\nSi ya tienes cuenta web, ve a Ajustes → Telegram en la web, genera un código de vinculación y envíamelo así:\n/link TU_CODIGO"
+      "¡Hola! Soy tu agente personal.\n\nSi ya tienes cuenta web, ve a Ajustes → Telegram en la web, genera un código de vinculación y envíamelo así:\n/link TU_CODIGO",
     );
     return NextResponse.json({ ok: true });
   }
@@ -214,7 +155,7 @@ export async function POST(request: Request) {
     if (!code) {
       await sendTelegramMessage(
         chatId,
-        "Indica el código que generaste en la web, por ejemplo:\n/link ABC123"
+        "Indica el código que generaste en la web, por ejemplo:\n/link ABC123",
       );
       return NextResponse.json({ ok: true });
     }
@@ -239,7 +180,7 @@ export async function POST(request: Request) {
         chat_id: chatId,
         linked_at: new Date().toISOString(),
       },
-      { onConflict: "user_id" }
+      { onConflict: "user_id" },
     );
 
     await db.from("telegram_link_codes").update({ used: true }).eq("id", linkRecord.id);
@@ -257,7 +198,7 @@ export async function POST(request: Request) {
   if (!telegramAccount) {
     await sendTelegramMessage(
       chatId,
-      "No tienes una cuenta vinculada. Usa /link TU_CODIGO (código desde Ajustes en la web)."
+      "No tienes una cuenta vinculada. Usa /link TU_CODIGO (código desde Ajustes en la web).",
     );
     return NextResponse.json({ ok: true });
   }
@@ -295,55 +236,24 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true });
   }
 
-  const { data: profile } = await db
-    .from("profiles")
-    .select("agent_system_prompt")
-    .eq("id", userId)
-    .single();
-
-  const { data: toolSettings } = await db
-    .from("user_tool_settings")
-    .select("*")
-    .eq("user_id", userId);
-
-  const { data: integrations } = await db
-    .from("user_integrations")
-    .select("*")
-    .eq("user_id", userId)
-    .eq("status", "active");
-
   try {
-    const integrationsContext = await loadIntegrationsContext(db, userId);
-
+    const ctx = await loadAgentContext(db, userId);
     const result = await runAgent({
       message: text,
       userId,
       sessionId: session.id,
-      systemPrompt: profile?.agent_system_prompt ?? "Eres un asistente útil.",
+      systemPrompt: ctx.systemPrompt,
       db,
-      enabledTools: (toolSettings ?? []).map((t: Record<string, unknown>) => ({
-        id: t.id as string,
-        user_id: t.user_id as string,
-        tool_id: t.tool_id as string,
-        enabled: t.enabled as boolean,
-        config_json: (t.config_json as Record<string, unknown>) ?? {},
-      })),
-      integrations: (integrations ?? []).map((i: Record<string, unknown>) => ({
-        id: i.id as string,
-        user_id: i.user_id as string,
-        provider: i.provider as string,
-        scopes: (i.scopes as string[]) ?? [],
-        status: i.status as "active" | "revoked" | "expired",
-        created_at: i.created_at as string,
-      })),
-      integrationsContext,
+      enabledTools: ctx.toolSettings,
+      integrations: ctx.integrations,
+      integrationsContext: ctx.integrationsContext,
     });
 
     if (result.pendingConfirmation) {
       await sendTelegramMessage(
         chatId,
         `Se requiere tu aprobación: ${result.pendingConfirmation.summary}`,
-        confirmationKeyboard(result.pendingConfirmation.toolCallId)
+        confirmationKeyboard(result.pendingConfirmation.toolCallId),
       );
     } else if (result.response) {
       await sendTelegramMessage(chatId, result.response);
