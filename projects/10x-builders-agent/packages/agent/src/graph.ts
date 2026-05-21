@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { StateGraph, Annotation, Command, interrupt } from "@langchain/langgraph";
+import { StateGraph, Command, interrupt } from "@langchain/langgraph";
 import {
   HumanMessage,
   AIMessage,
@@ -13,6 +13,8 @@ import { createChatModel } from "./model";
 import { buildLangChainTools, summariseToolCall } from "./tools/adapters";
 import { getToolRisk } from "./tools/catalog";
 import { getCheckpointer } from "./checkpointer";
+import { GraphState } from "./state";
+import { compactionNode } from "./nodes/compaction_node";
 import {
   addMessage,
   createToolCall,
@@ -22,16 +24,6 @@ import {
   updateToolCallStatus,
 } from "@agents/db";
 import type { IntegrationsContext, PendingConfirmation } from "./types";
-
-const GraphState = Annotation.Root({
-  messages: Annotation<BaseMessage[]>({
-    reducer: (prev, next) => [...prev, ...next],
-    default: () => [],
-  }),
-  sessionId: Annotation<string>(),
-  userId: Annotation<string>(),
-  systemPrompt: Annotation<string>(),
-});
 
 export type ResumeDecision = "approve" | "reject";
 
@@ -321,14 +313,16 @@ export async function runAgent(input: AgentInput): Promise<AgentOutput> {
   }
 
   const graph = new StateGraph(GraphState)
+    .addNode("compaction", compactionNode)
     .addNode("agent", agentNode)
     .addNode("tools", toolExecutorNode)
-    .addEdge("__start__", "agent")
+    .addEdge("__start__", "compaction")
+    .addEdge("compaction", "agent")
     .addConditionalEdges("agent", shouldContinueAfterAgent, {
       tools: "tools",
       end: "__end__",
     })
-    .addEdge("tools", "agent");
+    .addEdge("tools", "compaction");
 
   const checkpointer = await getCheckpointer();
   const app = graph.compile({ checkpointer });
@@ -356,23 +350,33 @@ export async function runAgent(input: AgentInput): Promise<AgentOutput> {
     if (!message) {
       throw new Error("runAgent: `message` is required when not resuming");
     }
-    const history = await getSessionMessages(db, sessionId, 30);
+    const history = await getSessionMessages(db, sessionId, 15);
+    // Asignamos id explícito a cada BaseMessage. messagesStateReducer dedupe y
+    // procesa RemoveMessage por id; sin id, compaction_node no puede eliminar
+    // los mensajes viejos (ver state.ts y nodes/compaction_node.ts).
     const priorMessages: BaseMessage[] = history.map((m) => {
-      if (m.role === "user") return new HumanMessage(m.content);
-      if (m.role === "assistant") return new AIMessage(m.content);
-      return new HumanMessage(m.content);
+      const id = randomUUID();
+      if (m.role === "user") return new HumanMessage({ id, content: m.content });
+      if (m.role === "assistant") return new AIMessage({ id, content: m.content });
+      return new HumanMessage({ id, content: m.content });
     });
 
     await addMessage(db, sessionId, "user", message);
 
     const initialMessages: BaseMessage[] = [
-      new SystemMessage(systemPrompt),
+      new SystemMessage({ id: randomUUID(), content: systemPrompt }),
       ...priorMessages,
-      new HumanMessage(message),
+      new HumanMessage({ id: randomUUID(), content: message }),
     ];
 
     finalState = (await app.invoke(
-      { messages: initialMessages, sessionId, userId, systemPrompt },
+      {
+        messages: initialMessages,
+        sessionId,
+        userId,
+        systemPrompt,
+        compactionFailures: 0,
+      },
       config,
     )) as typeof GraphState.State;
   }
