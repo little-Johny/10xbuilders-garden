@@ -81,6 +81,8 @@ Next.js carga `.env*` desde el directorio de la app **`apps/web`**, no desde la 
    | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Clave `anon` |
    | `SUPABASE_SERVICE_ROLE_KEY` | Clave `service_role` (solo servidor) |
    | `OPENROUTER_API_KEY` | Clave de OpenRouter |
+   | `OPENROUTER_MODEL` | Slug del modelo principal del agente en OpenRouter (ej. `openai/gpt-oss-120b:free`) |
+   | `OPENROUTER_COMPACTION_MODEL` | Slug del modelo dedicado a compactar el historial (memoria a corto plazo del agente). Diseño en [docs/compaction-plan.md](docs/compaction-plan.md) |
    | `OAUTH_ENCRYPTION_KEY` | Clave para cifrar/descifrar tokens OAuth de terceros (AES-256-GCM). Genera con `openssl rand -base64 32` |
    | `GITHUB_CLIENT_ID` | *(Opcional)* Client ID de la GitHub OAuth App |
    | `GITHUB_CLIENT_SECRET` | *(Opcional)* Client Secret de la GitHub OAuth App |
@@ -266,6 +268,7 @@ Para apagar: `select cron.unschedule('scheduled-tasks-tick');`. Detalles operati
 - [docs/file_tools_plan.md](docs/file_tools_plan.md) — plan de las file tools `read_file`/`write_file`/`edit_file` (gate `ALLOW_FILE_TOOLS`, sandbox opcional).
 - [docs/scheduled-tasks-plan.md](docs/scheduled-tasks-plan.md) — plan de tareas programadas (decisiones, schema, trade-offs).
 - [docs/scheduled-tasks.md](docs/scheduled-tasks.md) — guía de uso, setup de pg_cron y operación de tareas programadas.
+- [docs/compaction-plan.md](docs/compaction-plan.md) — plan de la memoria a corto plazo del agente (compaction_node, microcompact + LLM compaction, circuit breaker).
 - [CHANGELOG.md](CHANGELOG.md) — historial de cambios.
 
 ---

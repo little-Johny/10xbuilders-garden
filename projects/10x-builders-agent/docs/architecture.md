@@ -154,11 +154,23 @@ Diseño detallado en [docs/github-integration.md](github-integration.md) (seccio
 
 ## LangGraph: grafo simplificado
 
-- **StateGraph** con dos nodos: `agent` (invoca modelo con tools) y `tools` (ejecuta tool calls).
-- **Arista condicional** desde `agent`: si hay tool calls → `tools` → `agent`; si no → `__end__`.
-- **Arista condicional** desde `tools`: si hay `pendingConfirmation` → `__end__` (halt); si no → `agent`.
-- **MemorySaver** como checkpointer (thread_id = session_id).
+- **StateGraph** con tres nodos: `compaction` (memoria a corto plazo), `agent` (invoca modelo con tools) y `tools` (ejecuta tool calls).
+- **Topología**: `__start__ → compaction → agent → (tools | __end__)`, con `tools → compaction` (el edge crítico: cada tool result pasa por compaction antes de volver al agente).
+- **Arista condicional** desde `agent`: si hay tool calls → `tools`; si no → `__end__`.
+- **PostgresSaver** como checkpointer (thread_id = uuid por turno, ver `graph.ts`).
 - Máximo 6 iteraciones de tool para evitar loops.
+
+### Memoria a corto plazo (compaction_node)
+
+El nodo `compaction` actúa como memoria a corto plazo del agente. Cada vez que la conversación lo atraviesa decide si limpiar y/o resumir el historial:
+
+- **Etapa 1 (microcompact, gratis):** reemplaza el contenido de los `ToolMessage` viejos por `[tool result cleared]`, preservando íntegros los últimos 5. Usa el mismo `id` para que `messagesStateReducer` sobrescriba la entrada en vez de duplicar.
+- **Etapa 2 (LLM compaction):** si tras el microcompact la estimación `chars/4` supera el 80% de `CONTEXT_WINDOW = 64_000`, invoca `createCompactionModel()` (modelo dedicado vía `OPENROUTER_COMPACTION_MODEL`) con un prompt de 9 secciones. La respuesta pasa por `stripAnalysisBlocks()` antes de reinyectarse como `SystemMessage` resumen + `RemoveMessage` por cada mensaje compactado.
+- **Circuit breaker:** tras 3 fallos consecutivos de la etapa 2 (campo `compactionFailures` en el state), el nodo hace passthrough sin tocar `messages` para no bloquear el grafo.
+
+El reducer de `messages` es `messagesStateReducer` (oficial de `@langchain/langgraph`), que dedupe por id y procesa `RemoveMessage`. Para que esto funcione, `runAgent` asigna `randomUUID()` explícito a los `SystemMessage` / `HumanMessage` / `AIMessage` que construye al cargar historial.
+
+Diseño completo en [compaction-plan.md](compaction-plan.md).
 
 ## LangChain: qué usamos
 
