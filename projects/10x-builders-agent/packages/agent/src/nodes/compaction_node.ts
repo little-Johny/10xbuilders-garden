@@ -1,3 +1,5 @@
+import { appendFile } from "node:fs/promises";
+import { join } from "node:path";
 import {
   AIMessage,
   HumanMessage,
@@ -10,11 +12,12 @@ import { createCompactionModel } from "../model";
 import type { GraphStateType } from "../state";
 
 const CONTEXT_WINDOW = 64_000;
-const COMPACTION_THRESHOLD = 0.8;
+const COMPACTION_THRESHOLD = 0.01;
 const TOOL_RESULTS_TO_PRESERVE = 5;
 const TAIL_TURNS_TO_KEEP = TOOL_RESULTS_TO_PRESERVE + 2;
 const MAX_CONSECUTIVE_FAILURES = 3;
 const CLEARED_PLACEHOLDER = "[tool result cleared]";
+const COMPACTION_LOG_FILE = join(process.cwd(), "compaction.log");
 
 function contentToString(content: BaseMessage["content"]): string {
   return typeof content === "string" ? content : JSON.stringify(content);
@@ -74,11 +77,101 @@ function buildUserPrompt(messages: BaseMessage[]): string {
   return `Historial a compactar:\n\n${transcript}`;
 }
 
+const LOG_DIVIDER = "=".repeat(80);
+const LOG_SUBDIVIDER = "-".repeat(80);
+const MAX_CONTENT_PREVIEW = 500;
+
+function shortMessageType(m: BaseMessage): string {
+  if (m instanceof SystemMessage) return "System";
+  if (m instanceof HumanMessage) return "Human";
+  if (m instanceof AIMessage) return "AI    ";
+  if (m instanceof ToolMessage) return "Tool  ";
+  return (m.constructor?.name ?? "Unknown").padEnd(6).slice(0, 6);
+}
+
+function shortId(id: string | undefined | null): string {
+  if (!id) return "—";
+  return id.length > 12 ? id.slice(0, 12) : id;
+}
+
+function formatMessageBlock(m: BaseMessage, index: number): string {
+  const idx = String(index).padStart(2);
+  const type = shortMessageType(m);
+  const id = shortId(m.id);
+  const raw = contentToString(m.content);
+
+  const meta: string[] = [];
+  if (m instanceof AIMessage && m.tool_calls?.length) {
+    const tcs = m.tool_calls
+      .map((tc) => `${tc.name}(${shortId(tc.id)})`)
+      .join(", ");
+    meta.push(`tool_calls: ${tcs}`);
+  }
+  if (m instanceof ToolMessage) {
+    meta.push(`tool_call_id=${shortId(m.tool_call_id)}`);
+  }
+  const metaStr = meta.length > 0 ? `  ${meta.join(" | ")}` : "";
+
+  const header = `  [${idx}] ${type}  id=${id}  (${raw.length} chars)${metaStr}`;
+
+  if (raw.length === 0) {
+    return `${header}\n       (empty)`;
+  }
+
+  const truncated =
+    raw.length > MAX_CONTENT_PREVIEW
+      ? `${raw.slice(0, MAX_CONTENT_PREVIEW)} … (+${raw.length - MAX_CONTENT_PREVIEW} chars)`
+      : raw;
+  const indented = truncated
+    .split("\n")
+    .map((line) => `       ${line}`)
+    .join("\n");
+  return `${header}\n${indented}`;
+}
+
+async function appendCompactionLog(
+  stage: "before" | "after",
+  branch: string,
+  messages: BaseMessage[],
+  extra: Record<string, unknown> = {},
+): Promise<void> {
+  try {
+    const timestamp = new Date().toISOString();
+    const stageLabel = stage.toUpperCase();
+    const extraParts = Object.entries(extra).map(([k, v]) => `${k}: ${v}`);
+    const extraLine = extraParts.length > 0 ? ` | ${extraParts.join(" | ")}` : "";
+
+    const headerLines = [
+      LOG_DIVIDER,
+      `[${timestamp}] ${stageLabel} | branch: ${branch}`,
+      `  messageCount: ${messages.length}${extraLine}`,
+      LOG_SUBDIVIDER,
+    ];
+
+    const body =
+      messages.length > 0
+        ? messages.map((m, i) => formatMessageBlock(m, i)).join("\n")
+        : "  (sin mensajes)";
+
+    const entry = `${headerLines.join("\n")}\n${body}\n\n`;
+    await appendFile(COMPACTION_LOG_FILE, entry, "utf8");
+  } catch (err) {
+    // El logging es diagnóstico: nunca debe romper el flujo del agente.
+    const msg = err instanceof Error ? err.message : String(err);
+    console.warn("[compactionNode] failed to append compaction.log", { error: msg });
+  }
+}
+
 export async function compactionNode(
   state: GraphStateType,
 ): Promise<Partial<GraphStateType>> {
+  await appendCompactionLog("before", "entry", state.messages, {
+    compactionFailures: state.compactionFailures,
+  });
+
   if (state.compactionFailures >= MAX_CONSECUTIVE_FAILURES) {
     // Circuit breaker abierto: passthrough.
+    await appendCompactionLog("after", "circuit_breaker_open", state.messages);
     return {};
   }
 
@@ -118,6 +211,10 @@ export async function compactionNode(
 
   const tokens = estimateTokens(projected);
   if (tokens < CONTEXT_WINDOW * COMPACTION_THRESHOLD) {
+    await appendCompactionLog("after", "below_threshold", projected, {
+      tokens,
+      microcompactedCount: updates.length,
+    });
     return updates.length > 0
       ? { messages: updates, compactionFailures: 0 }
       : { compactionFailures: 0 };
@@ -133,6 +230,9 @@ export async function compactionNode(
   const headWithId = head.filter((m): m is BaseMessage & { id: string } => !!m.id);
 
   if (headWithId.length === 0) {
+    await appendCompactionLog("after", "no_head_with_id", projected, {
+      tokens,
+    });
     return updates.length > 0
       ? { messages: updates, compactionFailures: 0 }
       : { compactionFailures: 0 };
@@ -149,6 +249,9 @@ export async function compactionNode(
 
     if (!cleaned) {
       // Respuesta vacía tras strip: tratamos como fallo blando.
+      await appendCompactionLog("after", "llm_empty_response", projected, {
+        tokens,
+      });
       return {
         messages: updates,
         compactionFailures: state.compactionFailures + 1,
@@ -166,6 +269,17 @@ export async function compactionNode(
       summaryChars: cleaned.length,
     });
 
+    const removedIds = new Set(removes.map((r) => r.id));
+    const afterMessages = [
+      ...projected.filter((m) => !(m.id && removedIds.has(m.id))),
+      summaryMsg,
+    ];
+    await appendCompactionLog("after", "llm_compaction_applied", afterMessages, {
+      tokensBefore: tokens,
+      removed: removes.length,
+      summaryChars: cleaned.length,
+    });
+
     return {
       messages: [...updates, ...removes, summaryMsg],
       compactionFailures: 0,
@@ -173,6 +287,11 @@ export async function compactionNode(
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     console.warn("[compactionNode] LLM compaction failed", {
+      error: msg,
+      consecutiveFailures: state.compactionFailures + 1,
+    });
+    await appendCompactionLog("after", "llm_compaction_failed", projected, {
+      tokens,
       error: msg,
       consecutiveFailures: state.compactionFailures + 1,
     });
