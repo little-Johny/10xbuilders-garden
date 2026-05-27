@@ -8,7 +8,7 @@
 | Tipo            | `Feature — integración OAuth + tools de agente`                                             |
 | Stack principal | `Next.js + Node.js + TypeScript + LangGraph JS + Supabase + Google Calendar API (REST)`    |
 | Estado          | `Draft — pendiente de implementación`                                                       |
-| Antecedente     | Integración de GitHub ya implementada ([github-integration.md](./github-integration.md))    |
+| Antecedente     | Integración de GitHub ya implementada ([github/README.md](../github/README.md))    |
 
 ---
 
@@ -22,7 +22,7 @@ Integrar Google Calendar al agente para que el usuario conecte su cuenta de Goog
 
 ### ¿Qué existe hoy?
 
-La integración de **GitHub** ya está implementada y es el patrón a replicar (ver [`github-integration.md`](./github-integration.md)). En particular, ya existe la infraestructura transversal:
+La integración de **GitHub** ya está implementada y es el patrón a replicar (ver [`github/README.md`](../github/README.md)). En particular, ya existe la infraestructura transversal:
 
 - **OAuth + persistencia cifrada:** `apps/web/src/app/api/auth/github/{start,callback,disconnect}` y `apps/web/src/lib/github/oauth.ts` como referencia de flujo.
 - **Cifrado de tokens:** `packages/db/src/crypto.ts` — AES-256-GCM con `OAUTH_ENCRYPTION_KEY`. Reutilizable tal cual.
@@ -32,7 +32,7 @@ La integración de **GitHub** ya está implementada y es el patrón a replicar (
 - **UI de Settings:** sección de integraciones ya existente; agregar Google es un panel nuevo dentro del mismo patrón.
 - **UI de confirmación:** card en chat web e *inline buttons* en Telegram ya soportados.
 
-Toda la spec funcional original vive en [`calendar-integration.md`](./calendar-integration.md) (este brief la operacionaliza).
+Toda la spec funcional original vive en [`./README.md`](./README.md) (este brief la operacionaliza).
 
 ### Problema
 
@@ -245,7 +245,7 @@ OAUTH_ENCRYPTION_KEY=<misma key usada por GitHub>
 - [ ] Schemas de tools validados con `zod`.
 - [ ] Variables sensibles únicamente en `.env`; `.env.example` actualizado con las nuevas variables.
 - [ ] CHANGELOG actualizado con la sección de Calendar.
-- [ ] [`calendar-integration.md`](./calendar-integration.md) marcada como **implementada** y enlazada desde el README del proyecto.
+- [ ] [`./README.md`](./README.md) marcada como **implementada** y enlazada desde el README del proyecto.
 
 ### Criterios específicos de esta tarea
 
@@ -267,10 +267,10 @@ OAUTH_ENCRYPTION_KEY=<misma key usada por GitHub>
 
 ## 8. Referencias & Notas
 
-- Spec funcional original: [`calendar-integration.md`](./calendar-integration.md)
-- Patrón a replicar (ya implementado): [`github-integration.md`](./github-integration.md)
-- Brief del producto: [`brief.md`](./brief.md)
-- Arquitectura general: [`architecture.md`](./architecture.md)
+- Spec funcional original: [`./README.md`](./README.md)
+- Patrón a replicar (ya implementado): [`github/README.md`](../github/README.md)
+- Brief del producto: [`brief.md`](../../brief.md)
+- Arquitectura general: [`architecture.md`](../../architecture.md)
 - Google Calendar API — Events: https://developers.google.com/calendar/api/v3/reference/events
 - RFC 5545 — RRULE: https://datatracker.ietf.org/doc/html/rfc5545
 - Google OAuth 2.0 — server-side flow: https://developers.google.com/identity/protocols/oauth2/web-server

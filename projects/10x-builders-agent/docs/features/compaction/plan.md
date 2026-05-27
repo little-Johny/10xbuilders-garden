@@ -18,7 +18,7 @@ todos:
     content: "Modificar `packages/agent/src/graph.ts`: importar GraphState desde state.ts, asignar `randomUUID()` a SystemMessage/HumanMessage/AIMessage iniciales, incluir `compactionFailures: 0` en initial state, nueva topología `__start__ → compaction → agent`, `tools → compaction`."
     status: completed
   - id: docs
-    content: Crear `docs/compaction-plan.md` (este archivo), actualizar `docs/architecture.md`, `README.md` y `CHANGELOG.md`.
+    content: Crear `docs/features/compaction/plan.md` (este archivo), actualizar `docs/architecture.md`, `README.md` y `CHANGELOG.md`.
     status: completed
   - id: smoke-script
     content: "Smoke automatizable en `packages/agent/scripts/smoke-compaction.ts` — cubre stripAnalysisBlocks (6 casos), microcompact (idempotencia, conteo exacto, no-toca con ≤5), threshold (con y sin), circuit breaker y path de fallo del LLM (incrementa compactionFailures). Run: `npx tsx packages/agent/scripts/smoke-compaction.ts`."

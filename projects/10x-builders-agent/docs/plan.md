@@ -55,7 +55,7 @@ Construir un agente que permita a un usuario **gestionar tareas y ejecutar accio
 
 ### Fase 6: GitHub OAuth ✅
 
-Diseño detallado en [github-integration.md](github-integration.md).
+Diseño detallado en [features/github/README.md](features/github/README.md).
 
 - [x] GitHub OAuth App: flujo authorize → callback → token exchange
 - [x] Cifrado AES-256-GCM de access tokens (`packages/db/src/crypto.ts`)
@@ -71,12 +71,12 @@ Diseño detallado en [github-integration.md](github-integration.md).
 - [x] `docs/architecture.md` — arquitectura técnica viva
 - [x] `docs/plan.md` — este archivo
 - [x] `docs/brief.md` — visión y brief original
-- [x] `docs/github-integration.md` — diseño de la integración de GitHub
+- [x] `docs/features/github/README.md` — diseño de la integración de GitHub
 - [x] `CHANGELOG.md`
 
 ### Fase 8: Google Calendar OAuth ✅
 
-Diseño detallado en [calendar-integration.md](calendar-integration.md). Plan operativo en [calendar-integration-brief.md](calendar-integration-brief.md).
+Diseño detallado en [features/calendar/README.md](features/calendar/README.md). Plan operativo en [features/calendar/brief.md](features/calendar/brief.md).
 
 - [x] OAuth Client en Google Cloud Console: flujo authorize → callback → token exchange con `access_type=offline` + `prompt=consent`
 - [x] Migración `00003_google_integration.sql` (`encrypted_refresh_token`, `access_token_expires_at`)

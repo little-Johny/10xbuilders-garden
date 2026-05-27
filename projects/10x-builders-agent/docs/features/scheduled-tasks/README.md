@@ -2,7 +2,7 @@
 
 Permite que el agente ejecute prompts de forma recurrente: el usuario describe la tarea en lenguaje natural y especifica una `cron_expression`. Un job de pg_cron en Supabase llama cada minuto al endpoint `/api/scheduled-tasks/tick`, que arranca al agente en una sesión aislada y notifica el resultado por los canales configurados (MVP: Telegram).
 
-Documento hermano: `scheduled-tasks-plan.md` (decisiones de diseño y trade-offs).
+Documento hermano: `plan.md` (decisiones de diseño y trade-offs).
 
 ## Cómo se usa desde el chat
 

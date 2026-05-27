@@ -1,6 +1,6 @@
 # Plan de Implementación — Integración de Google Calendar
 
-Documento de **as-built**: registra lo que se ejecutó para habilitar Google Calendar en el agente, replicando el patrón ya consolidado para GitHub. La especificación funcional vive en [calendar-integration.md](calendar-integration.md) y el brief técnico en [calendar-integration-brief.md](calendar-integration-brief.md).
+Documento de **as-built**: registra lo que se ejecutó para habilitar Google Calendar en el agente, replicando el patrón ya consolidado para GitHub. La especificación funcional vive en [README.md](README.md) y el brief técnico en [brief.md](brief.md).
 
 ## Decisiones de diseño confirmadas
 
@@ -75,9 +75,9 @@ Documento de **as-built**: registra lo que se ejecutó para habilitar Google Cal
 
 - [x] README: paso 9 nuevo "Google Calendar (opcional)" con instrucciones de Google Cloud Console y los redirect URIs; tabla de variables de entorno con `GOOGLE_CLIENT_ID` y `GOOGLE_CLIENT_SECRET`; el paso de Telegram se renumeró a 10
 - [x] CHANGELOG actualizado con sección `[Unreleased] / Added`: integración OAuth, 5 tools, refresh token lifecycle, migration `00003`. Sección `Changed` refleja `IntegrationsContext.google`, `loadIntegrationsContext` extendido, `upsertIntegration` con campos opcionales y el panel de Settings
-- [x] [`calendar-integration.md`](calendar-integration.md) marcada con `> Estado: implementada.` y enlazada a este plan y al brief
-- [x] [`calendar-integration-brief.md`](calendar-integration-brief.md) — brief técnico que se redactó antes de implementar (input al plan)
-- [x] Fase 8 agregada en [`plan.md`](plan.md)
+- [x] [`README.md`](README.md) marcada con `> Estado: implementada.` y enlazada a este plan y al brief
+- [x] [`brief.md`](brief.md) — brief técnico que se redactó antes de implementar (input al plan)
+- [x] Fase 8 agregada en [`plan.md`](../../plan.md)
 
 ### Fase 7: Verificación ✅
 
@@ -98,7 +98,7 @@ Documento de **as-built**: registra lo que se ejecutó para habilitar Google Cal
 - `apps/web/src/app/api/auth/google/callback/route.ts`
 - `apps/web/src/app/api/auth/google/disconnect/route.ts`
 - `packages/agent/src/integrations/google-calendar.ts`
-- `docs/calendar-integration-brief.md`
+- `docs/features/calendar/brief.md`
 
 ### Modificados (10)
 
@@ -113,7 +113,7 @@ Documento de **as-built**: registra lo que se ejecutó para habilitar Google Cal
 - `README.md` — paso de Google Calendar y env vars
 - `CHANGELOG.md` — entrada en `[Unreleased]`
 - `docs/plan.md` — Fase 8
-- `docs/calendar-integration.md` — header de estado
+- `docs/features/calendar/README.md` — header de estado
 
 ### Reusados sin tocar
 

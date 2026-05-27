@@ -82,7 +82,7 @@ Next.js carga `.env*` desde el directorio de la app **`apps/web`**, no desde la 
    | `SUPABASE_SERVICE_ROLE_KEY` | Clave `service_role` (solo servidor) |
    | `OPENROUTER_API_KEY` | Clave de OpenRouter |
    | `OPENROUTER_MODEL` | Slug del modelo principal del agente en OpenRouter (ej. `openai/gpt-oss-120b:free`) |
-   | `OPENROUTER_COMPACTION_MODEL` | Slug del modelo dedicado a compactar el historial (memoria a corto plazo del agente). Diseño en [docs/compaction-plan.md](docs/compaction-plan.md) |
+   | `OPENROUTER_COMPACTION_MODEL` | Slug del modelo dedicado a compactar el historial (memoria a corto plazo del agente). Diseño en [docs/features/compaction/plan.md](docs/features/compaction/plan.md) |
    | `OAUTH_ENCRYPTION_KEY` | Clave para cifrar/descifrar tokens OAuth de terceros (AES-256-GCM). Genera con `openssl rand -base64 32` |
    | `GITHUB_CLIENT_ID` | *(Opcional)* Client ID de la GitHub OAuth App |
    | `GITHUB_CLIENT_SECRET` | *(Opcional)* Client Secret de la GitHub OAuth App |
@@ -91,8 +91,8 @@ Next.js carga `.env*` desde el directorio de la app **`apps/web`**, no desde la 
    | `NEXT_PUBLIC_APP_URL` | *(Opcional)* URL base de la app (default: `http://localhost:3000`). Necesario para el callback de GitHub y Google OAuth |
    | `TELEGRAM_BOT_TOKEN` | *(Opcional)* Token del bot de Telegram |
    | `TELEGRAM_WEBHOOK_SECRET` | *(Opcional)* Secreto para validar webhooks de Telegram |
-   | `ALLOW_BASH_TOOL` | *(Opcional, gate)* `true`/`1` para exponer la tool `bash` (riesgo alto, HITL). Sin esta variable la tool **no se registra** aunque el usuario la tenga habilitada. Diseño en [docs/bash-tool-plan.md](docs/bash-tool-plan.md) |
-   | `ALLOW_FILE_TOOLS` | *(Opcional, gate)* `true`/`1` para exponer las tools `read_file`, `write_file` y `edit_file`. Sin esta variable las tres tools **no se registran**. Diseño en [docs/file_tools_plan.md](docs/file_tools_plan.md) |
+   | `ALLOW_BASH_TOOL` | *(Opcional, gate)* `true`/`1` para exponer la tool `bash` (riesgo alto, HITL). Sin esta variable la tool **no se registra** aunque el usuario la tenga habilitada. Diseño en [docs/features/bash-tool/plan.md](docs/features/bash-tool/plan.md) |
+   | `ALLOW_FILE_TOOLS` | *(Opcional, gate)* `true`/`1` para exponer las tools `read_file`, `write_file` y `edit_file`. Sin esta variable las tres tools **no se registran**. Diseño en [docs/features/file-tools/plan.md](docs/features/file-tools/plan.md) |
    | `FILE_TOOLS_WORKSPACE_ROOT` | *(Opcional)* Si se define, las file tools confinan toda ruta dentro de ese root y aceptan paths relativos resueltos contra él. Sin definir, solo se aceptan paths absolutos y el alcance lo dictan los permisos del proceso (úsalo solo en entornos confiables) |
    | `FILE_TOOL_MAX_BYTES` | *(Opcional)* Cap defensivo de bytes para `read_file`/`write_file`/`edit_file`. Default `1000000` |
 
@@ -144,7 +144,7 @@ Para que el agente opere sobre GitHub (listar repos, listar issues, crear issues
 5. Añade ambos a `apps/web/.env.local` y reinicia el servidor.
 6. En la web: **Ajustes → Integraciones → GitHub → Conectar**.
 
-Para detalles sobre el diseño de la integración (cifrado de tokens, flujo de confirmación, niveles de riesgo), ver [docs/github-integration.md](docs/github-integration.md).
+Para detalles sobre el diseño de la integración (cifrado de tokens, flujo de confirmación, niveles de riesgo), ver [docs/features/github/README.md](docs/features/github/README.md).
 
 ---
 
@@ -163,7 +163,7 @@ Para que el agente opere sobre Google Calendar (listar, crear, modificar y elimi
 
 El agente pide los scopes `openid email https://www.googleapis.com/auth/calendar.events`. El access token se renueva automáticamente con el refresh token cuando expira (~1h).
 
-Para detalles sobre el diseño (recurrencias, scope instance/series, refresh flow), ver [docs/calendar-integration.md](docs/calendar-integration.md).
+Para detalles sobre el diseño (recurrencias, scope instance/series, refresh flow), ver [docs/features/calendar/README.md](docs/features/calendar/README.md).
 
 ---
 
@@ -196,7 +196,7 @@ Después de vincular, los mensajes al bot usan el mismo pipeline que el chat web
 
 ## Paso 11 — Tareas programadas (opcional)
 
-Permite que el agente ejecute prompts de forma recurrente. Documentación completa en [docs/scheduled-tasks.md](docs/scheduled-tasks.md).
+Permite que el agente ejecute prompts de forma recurrente. Documentación completa en [docs/features/scheduled-tasks/README.md](docs/features/scheduled-tasks/README.md).
 
 ### Variables de entorno
 
@@ -239,7 +239,7 @@ CRON_SECRET=  # openssl rand -hex 32
 
 4. Prueba creando una tarea desde el chat: *"programa una tarea cada minuto que me diga 'ping'"*. Aprueba la tarjeta HITL y espera al siguiente minuto.
 
-Para apagar: `select cron.unschedule('scheduled-tasks-tick');`. Detalles operativos (rotación del secret, debug de disparos, modo `autonomous`) en [docs/scheduled-tasks.md](docs/scheduled-tasks.md).
+Para apagar: `select cron.unschedule('scheduled-tasks-tick');`. Detalles operativos (rotación del secret, debug de disparos, modo `autonomous`) en [docs/features/scheduled-tasks/README.md](docs/features/scheduled-tasks/README.md).
 
 ---
 
@@ -259,16 +259,16 @@ Para apagar: `select cron.unschedule('scheduled-tasks-tick');`. Detalles operati
 - [docs/brief.md](docs/brief.md) — visión y brief original.
 - [docs/architecture.md](docs/architecture.md) — arquitectura técnica del MVP.
 - [docs/plan.md](docs/plan.md) — fases y decisiones de implementación.
-- [docs/github-integration.md](docs/github-integration.md) — diseño de la integración de GitHub (OAuth, cifrado, confirmaciones).
-- [docs/calendar-integration.md](docs/calendar-integration.md) — diseño de la integración de Google Calendar (OAuth, refresh, recurrencias).
-- [docs/calendar-integration-brief.md](docs/calendar-integration-brief.md) — brief inicial de la integración de Google Calendar.
-- [docs/calendar-integration-plan.md](docs/calendar-integration-plan.md) — plan de implementación de Google Calendar.
-- [docs/hitl-plan.md](docs/hitl-plan.md) — plan del flujo human-in-the-loop con `interrupt()`.
-- [docs/bash-tool-plan.md](docs/bash-tool-plan.md) — plan de la tool `bash` (gate `ALLOW_BASH_TOOL`, HITL).
-- [docs/file_tools_plan.md](docs/file_tools_plan.md) — plan de las file tools `read_file`/`write_file`/`edit_file` (gate `ALLOW_FILE_TOOLS`, sandbox opcional).
-- [docs/scheduled-tasks-plan.md](docs/scheduled-tasks-plan.md) — plan de tareas programadas (decisiones, schema, trade-offs).
-- [docs/scheduled-tasks.md](docs/scheduled-tasks.md) — guía de uso, setup de pg_cron y operación de tareas programadas.
-- [docs/compaction-plan.md](docs/compaction-plan.md) — plan de la memoria a corto plazo del agente (compaction_node, microcompact + LLM compaction, circuit breaker).
+- [docs/features/github/README.md](docs/features/github/README.md) — diseño de la integración de GitHub (OAuth, cifrado, confirmaciones).
+- [docs/features/calendar/README.md](docs/features/calendar/README.md) — diseño de la integración de Google Calendar (OAuth, refresh, recurrencias).
+- [docs/features/calendar/brief.md](docs/features/calendar/brief.md) — brief inicial de la integración de Google Calendar.
+- [docs/features/calendar/plan.md](docs/features/calendar/plan.md) — plan de implementación de Google Calendar.
+- [docs/features/hitl/plan.md](docs/features/hitl/plan.md) — plan del flujo human-in-the-loop con `interrupt()`.
+- [docs/features/bash-tool/plan.md](docs/features/bash-tool/plan.md) — plan de la tool `bash` (gate `ALLOW_BASH_TOOL`, HITL).
+- [docs/features/file-tools/plan.md](docs/features/file-tools/plan.md) — plan de las file tools `read_file`/`write_file`/`edit_file` (gate `ALLOW_FILE_TOOLS`, sandbox opcional).
+- [docs/features/scheduled-tasks/plan.md](docs/features/scheduled-tasks/plan.md) — plan de tareas programadas (decisiones, schema, trade-offs).
+- [docs/features/scheduled-tasks/README.md](docs/features/scheduled-tasks/README.md) — guía de uso, setup de pg_cron y operación de tareas programadas.
+- [docs/features/compaction/plan.md](docs/features/compaction/plan.md) — plan de la memoria a corto plazo del agente (compaction_node, microcompact + LLM compaction, circuit breaker).
 - [CHANGELOG.md](CHANGELOG.md) — historial de cambios.
 
 ---

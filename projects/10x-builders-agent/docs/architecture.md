@@ -78,15 +78,27 @@
 │   ├── brief.md                       # Brief original del producto
 │   ├── architecture.md                # ← este archivo
 │   ├── plan.md                        # Plan de implementación
-│   ├── github-integration.md          # Diseño de la integración de GitHub
-│   ├── calendar-integration.md        # Diseño de la integración de Google Calendar
-│   ├── calendar-integration-brief.md  # Brief inicial de Google Calendar
-│   ├── calendar-integration-plan.md   # Plan de implementación de Google Calendar
-│   ├── hitl-plan.md                   # Plan del flujo human-in-the-loop
-│   ├── bash-tool-plan.md              # Plan de la tool bash
-│   ├── file_tools_plan.md             # Plan de las file tools (read/write/edit)
-│   ├── scheduled-tasks-plan.md        # Plan de tareas programadas
-│   └── scheduled-tasks.md             # Guía de uso + setup de pg_cron
+│   └── features/                      # Una carpeta por feature/integración
+│       ├── github/
+│       │   └── README.md              # Diseño de la integración de GitHub
+│       ├── calendar/
+│       │   ├── README.md              # Diseño de la integración de Google Calendar
+│       │   ├── brief.md               # Brief inicial de Google Calendar
+│       │   └── plan.md                # Plan de implementación de Google Calendar
+│       ├── google-sheets/
+│       │   ├── brief.md               # Brief de Google Sheets
+│       │   └── plan.md                # Plan de Google Sheets
+│       ├── scheduled-tasks/
+│       │   ├── README.md              # Guía de uso + setup de pg_cron
+│       │   └── plan.md                # Plan de tareas programadas
+│       ├── hitl/
+│       │   └── plan.md                # Plan del flujo human-in-the-loop
+│       ├── bash-tool/
+│       │   └── plan.md                # Plan de la tool bash
+│       ├── file-tools/
+│       │   └── plan.md                # Plan de las file tools (read/write/edit)
+│       └── compaction/
+│           └── plan.md                # Plan de la memoria a corto plazo del agente
 └── turbo.json                     # Pipeline: build, dev, lint, type-check
 ```
 
@@ -141,7 +153,7 @@
 
 ## Flujo de confirmación de tools
 
-Diseño detallado en [docs/github-integration.md](github-integration.md) (secciones 4, 5 y 6).
+Diseño detallado en [docs/features/github/README.md](features/github/README.md) (secciones 4, 5 y 6).
 
 1. El agente detecta un tool call de riesgo medio o alto → lanza `ConfirmationRequiredError`.
 2. El graph persiste la tool call con estado `pending_confirmation` y se detiene.
@@ -170,7 +182,7 @@ El nodo `compaction` actúa como memoria a corto plazo del agente. Cada vez que 
 
 El reducer de `messages` es `messagesStateReducer` (oficial de `@langchain/langgraph`), que dedupe por id y procesa `RemoveMessage`. Para que esto funcione, `runAgent` asigna `randomUUID()` explícito a los `SystemMessage` / `HumanMessage` / `AIMessage` que construye al cargar historial.
 
-Diseño completo en [compaction-plan.md](compaction-plan.md).
+Diseño completo en [features/compaction/plan.md](features/compaction/plan.md).
 
 ## LangChain: qué usamos
 
@@ -202,7 +214,7 @@ Todas con **RLS habilitado** y políticas por `user_id` desde el día 1.
 - **Allowlist de tools**: solo se montan las que el usuario habilitó en onboarding/ajustes Y para las que tiene integración activa Y token descifrable.
 - **Confirmación humana**: tools de riesgo medio/alto generan `pending_confirmation` en lugar de ejecutar. El grafo se detiene sin volver al modelo para evitar que el LLM fabrique respuestas de "esperando aprobación".
 - **Cifrado de tokens OAuth**: AES-256-GCM con clave derivada de `OAUTH_ENCRYPTION_KEY` vía SHA-256. Formato: `v1:<iv>:<tag>:<ciphertext>`. Los tokens solo se descifran en memoria durante la invocación del agente y nunca se serializan en respuestas, cookies o logs.
-- **GitHub OAuth**: flujo estándar con state CSRF, intercambio de código por token en el servidor, almacenamiento cifrado del access token. Ver [docs/github-integration.md](github-integration.md).
+- **GitHub OAuth**: flujo estándar con state CSRF, intercambio de código por token en el servidor, almacenamiento cifrado del access token. Ver [docs/features/github/README.md](features/github/README.md).
 - **Budget**: `budget_tokens_limit` por sesión para evitar costes descontrolados.
 
 ## Canales
@@ -213,7 +225,7 @@ Todas con **RLS habilitado** y políticas por `user_id` desde el día 1.
 
 ## Tareas programadas
 
-Diseño en [scheduled-tasks-plan.md](scheduled-tasks-plan.md), guía operativa en [scheduled-tasks.md](scheduled-tasks.md).
+Diseño en [features/scheduled-tasks/plan.md](features/scheduled-tasks/plan.md), guía operativa en [features/scheduled-tasks/README.md](features/scheduled-tasks/README.md).
 
 ```
 chat (web/telegram)                pg_cron (cada minuto)
@@ -253,8 +265,8 @@ Detalles clave:
 
 | Proveedor | Tipo | Scopes | Tools habilitadas | Doc de diseño |
 |-----------|------|--------|-------------------|---------------|
-| GitHub | OAuth App | `repo`, `read:user` | `github_list_repos`, `github_list_issues`, `github_create_issue`, `github_create_repo` | [github-integration.md](github-integration.md) |
-| Google Calendar | OAuth Web Client | `openid email https://www.googleapis.com/auth/calendar.events` | `gcal_list_events`, `gcal_get_event`, `gcal_create_event`, `gcal_update_event`, `gcal_delete_event` | [calendar-integration.md](calendar-integration.md) |
+| GitHub | OAuth App | `repo`, `read:user` | `github_list_repos`, `github_list_issues`, `github_create_issue`, `github_create_repo` | [features/github/README.md](features/github/README.md) |
+| Google Calendar | OAuth Web Client | `openid email https://www.googleapis.com/auth/calendar.events` | `gcal_list_events`, `gcal_get_event`, `gcal_create_event`, `gcal_update_event`, `gcal_delete_event` | [features/calendar/README.md](features/calendar/README.md) |
 
 ## Tools del agente
 
@@ -273,11 +285,11 @@ El catálogo completo vive en [`packages/agent/src/tools/catalog.ts`](../package
 | `gcal_create_event`   | medium | `google`    | —                              | sí                | Soporta RRULE (RFC 5545) |
 | `gcal_update_event`   | medium | `google`    | —                              | sí                | `scope: instance | series` |
 | `gcal_delete_event`   | high   | `google`    | —                              | sí                | `scope: instance | series` |
-| `bash`                | high   | —           | `ALLOW_BASH_TOOL`              | sí                | Subproceso `bash -lc` por llamada (sin shell persistente entre llamadas); `cwd` opcional. Diseño en [bash-tool-plan.md](bash-tool-plan.md) |
+| `bash`                | high   | —           | `ALLOW_BASH_TOOL`              | sí                | Subproceso `bash -lc` por llamada (sin shell persistente entre llamadas); `cwd` opcional. Diseño en [features/bash-tool/plan.md](features/bash-tool/plan.md) |
 | `read_file`           | low    | —           | `ALLOW_FILE_TOOLS`             | no                | Lee UTF-8; `offset`/`limit` 1-indexed; sandbox opcional vía `FILE_TOOLS_WORKSPACE_ROOT` |
 | `write_file`          | low    | —           | `ALLOW_FILE_TOOLS`             | no                | Solo crea archivos nuevos (atómico tempfile + `fs.rename`); falla con `FILE_ALREADY_EXISTS` si existe |
-| `edit_file`           | high   | —           | `ALLOW_FILE_TOOLS`             | sí                | Reemplazo literal único (`old_string` → `new_string`) con escritura atómica y diff en la tarjeta de confirmación. Diseño en [file_tools_plan.md](file_tools_plan.md) |
-| `create_scheduled_task` | medium | —         | `ALLOW_SCHEDULED_TASKS_TOOL`   | sí                | Crea una tarea recurrente. Valida cron con `cron-parser` y precomputa `next_execution`. Diseño en [scheduled-tasks-plan.md](scheduled-tasks-plan.md) |
+| `edit_file`           | high   | —           | `ALLOW_FILE_TOOLS`             | sí                | Reemplazo literal único (`old_string` → `new_string`) con escritura atómica y diff en la tarjeta de confirmación. Diseño en [features/file-tools/plan.md](features/file-tools/plan.md) |
+| `create_scheduled_task` | medium | —         | `ALLOW_SCHEDULED_TASKS_TOOL`   | sí                | Crea una tarea recurrente. Valida cron con `cron-parser` y precomputa `next_execution`. Diseño en [features/scheduled-tasks/plan.md](features/scheduled-tasks/plan.md) |
 | `list_scheduled_tasks`  | low    | —         | `ALLOW_SCHEDULED_TASKS_TOOL`   | no                | Lista las tareas del usuario con filtro opcional por status |
 | `update_scheduled_task` | medium | —         | `ALLOW_SCHEDULED_TASKS_TOOL`   | sí                | Activa/desactiva una tarea por id sin eliminarla (toggle del flag `enabled`) |
 | `delete_scheduled_task` | high   | —         | `ALLOW_SCHEDULED_TASKS_TOOL`   | sí                | Elimina permanentemente una tarea por id |

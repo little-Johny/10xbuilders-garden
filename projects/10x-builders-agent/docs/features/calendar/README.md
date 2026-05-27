@@ -1,6 +1,6 @@
 # Integración de Google Calendar — Especificación
 
-> **Estado: implementada.** El plan operativo vive en [`calendar-integration-brief.md`](./calendar-integration-brief.md). Esta página describe el diseño funcional; los criterios de aceptación al final están todos cubiertos por la implementación actual.
+> **Estado: implementada.** El plan operativo vive en [`brief.md`](./brief.md). Esta página describe el diseño funcional; los criterios de aceptación al final están todos cubiertos por la implementación actual.
 
 ## Objetivo
 
