@@ -10,6 +10,7 @@ import { loadAgentContext } from "@/lib/agent/load-context";
 
 const WEBHOOK_SECRET = process.env.TELEGRAM_WEBHOOK_SECRET ?? "";
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN ?? "";
+const WEB_URL = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
 interface TelegramUpdate {
   update_id: number;
@@ -145,7 +146,7 @@ export async function POST(request: Request) {
   if (command === "/start") {
     await sendTelegramMessage(
       chatId,
-      "¡Hola! Soy tu agente personal.\n\nSi ya tienes cuenta web, ve a Ajustes → Telegram en la web, genera un código de vinculación y envíamelo así:\n/link TU_CODIGO",
+      `¡Hola! Soy tu agente personal.\n\nSi ya tienes cuenta web, ve a Ajustes → Telegram en la web, genera un código de vinculación y envíamelo así:\n/link TU_CODIGO\n\n¿Olvidaste tu contraseña? Recupérala aquí: ${WEB_URL}/forgot-password`,
     );
     return NextResponse.json({ ok: true });
   }
@@ -198,7 +199,7 @@ export async function POST(request: Request) {
   if (!telegramAccount) {
     await sendTelegramMessage(
       chatId,
-      "No tienes una cuenta vinculada. Usa /link TU_CODIGO (código desde Ajustes en la web).",
+      `No tienes una cuenta vinculada. Usa /link TU_CODIGO (código desde Ajustes en la web).\n\n¿Olvidaste tu contraseña? Recupérala aquí: ${WEB_URL}/forgot-password`,
     );
     return NextResponse.json({ ok: true });
   }
