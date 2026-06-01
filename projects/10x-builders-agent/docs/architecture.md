@@ -22,6 +22,8 @@
 │           ├── app/
 │           │   ├── login/         # Autenticación
 │           │   ├── signup/
+│           │   ├── forgot-password/ # Solicitar enlace de recuperación
+│           │   ├── reset-password/  # Establecer nueva contraseña (sesión recovery)
 │           │   ├── onboarding/    # Wizard multi-paso
 │           │   ├── chat/          # Interfaz de chat + confirmaciones
 │           │   ├── settings/      # Ajustes + integraciones
@@ -40,10 +42,13 @@
 │           │       │   └── setup/             # GET → registrar webhook
 │           │       └── scheduled-tasks/
 │           │           └── tick/              # POST (cron-only) → dispara tareas due
+│           ├── components/                   # Componentes compartidos (PasswordInput, PasswordRules)
 │           ├── lib/
 │           │   ├── agent/
 │           │   │   ├── integrations-context.ts  # Carga tokens descifrados en memoria
 │           │   │   └── load-context.ts          # Helper compartido: profile + tools + integraciones + preámbulo temporal
+│           │   ├── auth/
+│           │   │   └── password.ts              # Esquema de contraseña (PASSWORD_RULES, validatePassword)
 │           │   ├── github/
 │           │   │   └── oauth.ts               # Helpers OAuth (authorize URL, token exchange)
 │           │   └── supabase/                  # Helpers SSR (client, middleware)
@@ -97,8 +102,11 @@
 │       │   └── plan.md                # Plan de la tool bash
 │       ├── file-tools/
 │       │   └── plan.md                # Plan de las file tools (read/write/edit)
-│       └── compaction/
-│           └── plan.md                # Plan de la memoria a corto plazo del agente
+│       ├── compaction/
+│       │   └── plan.md                # Plan de la memoria a corto plazo del agente
+│       └── password-recovery/
+│           ├── brief.md               # Brief del flujo de recuperación de contraseña
+│           └── plan.md                # Plan as-built del flujo de recuperación
 └── turbo.json                     # Pipeline: build, dev, lint, type-check
 ```
 

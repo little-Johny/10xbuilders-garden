@@ -57,7 +57,7 @@ Si algo falla (por ejemplo, el trigger `on_auth_user_created` en un proyecto ya 
      - `http://localhost:3000/auth/callback`
      - `http://localhost:3000/**` (o la variante que permita tu versión del dashboard para desarrollo)
 
-Así el flujo de login/signup y el intercambio de código en `/auth/callback` funcionan en local.
+Así el flujo de login/signup, el intercambio de código en `/auth/callback` y la recuperación de contraseña (`/forgot-password` → email → `/reset-password`) funcionan en local. Para que el reset funcione end-to-end, además se necesita SMTP (Supabase trae uno por defecto con límites bajos) y que la plantilla "Reset Password" use `{{ .ConfirmationURL }}` (flujo PKCE). Detalle del flujo y requisitos en [docs/features/password-recovery/plan.md](docs/features/password-recovery/plan.md).
 
 ---
 
@@ -269,6 +269,8 @@ Para apagar: `select cron.unschedule('scheduled-tasks-tick');`. Detalles operati
 - [docs/features/scheduled-tasks/plan.md](docs/features/scheduled-tasks/plan.md) — plan de tareas programadas (decisiones, schema, trade-offs).
 - [docs/features/scheduled-tasks/README.md](docs/features/scheduled-tasks/README.md) — guía de uso, setup de pg_cron y operación de tareas programadas.
 - [docs/features/compaction/plan.md](docs/features/compaction/plan.md) — plan de la memoria a corto plazo del agente (compaction_node, microcompact + LLM compaction, circuit breaker).
+- [docs/features/password-recovery/brief.md](docs/features/password-recovery/brief.md) — brief del flujo de recuperación de contraseña.
+- [docs/features/password-recovery/plan.md](docs/features/password-recovery/plan.md) — plan as-built del flujo de recuperación (pantallas, middleware whitelist, esquema de contraseña, toggle de visibilidad, requisitos Supabase).
 - [CHANGELOG.md](CHANGELOG.md) — historial de cambios.
 
 ---
@@ -279,5 +281,7 @@ Para apagar: `select cron.unschedule('scheduled-tasks-tick');`. Detalles operati
 - **Errores al guardar perfil o mensajes**: confirma que ejecutaste la migración SQL y que RLS no bloquea por falta de sesión (debes estar logueado con el mismo usuario).
 - **Chat sin respuesta / 500 en `/api/chat`**: `OPENROUTER_API_KEY`, cuota en OpenRouter o modelo en `model.ts`.
 - **Telegram no responde**: webhook debe ser HTTPS; token y secreto correctos; visita de nuevo `/api/telegram/setup` si cambias la URL pública.
+- **Email de recuperación no llega**: el SMTP por defecto de Supabase solo envía a miembros del proyecto y tiene límite bajo. Atajos: probar con el email de tu cuenta Supabase, generar el link manualmente desde Authentication → Users, o activar SMTP custom (Resend/SendGrid).
+- **Link de recuperación cae en la home en vez de en `/reset-password`**: las URLs `…/auth/callback` no están en la whitelist de Supabase (Authentication → URL Configuration → Redirect URLs).
 
 Si quieres, el siguiente paso natural es desplegar **Vercel** (o similar) para `apps/web`, definir las mismas variables de entorno en el panel del proveedor y usar la URL de producción en Supabase y en el webhook de Telegram.
