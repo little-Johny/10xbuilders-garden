@@ -18,6 +18,11 @@ export default async function LoginPage() {
         </div>
         <LoginForm />
         <p className="text-center text-sm text-neutral-500">
+          <a href="/forgot-password" className="text-blue-600 hover:underline">
+            ¿Olvidaste tu contraseña?
+          </a>
+        </p>
+        <p className="text-center text-sm text-neutral-500">
           ¿No tienes cuenta?{" "}
           <a href="/signup" className="text-blue-600 hover:underline">
             Crear cuenta
