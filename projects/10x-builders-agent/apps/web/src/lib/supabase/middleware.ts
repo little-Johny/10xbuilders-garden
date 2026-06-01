@@ -31,7 +31,13 @@ export async function updateSession(request: NextRequest) {
 
   const { pathname } = request.nextUrl;
 
-  const publicPaths = ["/login", "/signup", "/auth/callback"];
+  const publicPaths = [
+    "/login",
+    "/signup",
+    "/auth/callback",
+    "/forgot-password",
+    "/reset-password",
+  ];
   const isPublic = publicPaths.some((p) => pathname.startsWith(p));
   // Endpoints invocados por servicios externos (Telegram, pg_cron) sin
   // cookies de navegador. Cada uno se autentica con su propio mecanismo:
