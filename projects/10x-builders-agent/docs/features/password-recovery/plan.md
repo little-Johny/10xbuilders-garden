@@ -1,8 +1,8 @@
 # Plan de Implementación — Recuperación de contraseña (web)
 
-Documento de plan **previo a implementación**. Se basa en el [brief.md](brief.md) e issue **#4**.
+Documento de plan, consolidado como **as-built**. Se basa en el [brief.md](brief.md) e issue **#4**.
 
-> **Estado:** `Draft`. Al completar cada fase, marcar los checkboxes; al final consolidar como **as-built**.
+> **Estado:** `Implementado` (2026-05-27). `type-check` del web pasa sin errores. Pendiente: configuración en el Supabase Dashboard (ver §7) y prueba manual end-to-end.
 
 ---
 
@@ -11,8 +11,10 @@ Documento de plan **previo a implementación**. Se basa en el [brief.md](brief.m
 - Flujo de reset por email 100% sobre **Supabase Auth** nativo (`resetPasswordForEmail` → `exchangeCodeForSession` → `updateUser`). Sin API ni tablas propias.
 - 2 pantallas nuevas (`/forgot-password`, `/reset-password`) + 1 link en `/login`.
 - El **callback existente NO necesita cambios de lógica**: el flujo se apoya en el query param `next` que ya soporta `app/auth/callback/route.ts:7,13`. Solo se endurece el manejo de error.
+- **Middleware** (`lib/supabase/middleware.ts`) había que ajustar: por defecto redirige a `/login` cualquier ruta no listada en `publicPaths`. Se añadió `/forgot-password` y `/reset-password` a esa whitelist (descubierto al probar en navegador).
+- **Esquema de contraseña + UX del input**: add-on aplicado tras la primera ronda. Centralizado en `lib/auth/password.ts` (8+, mayúscula, minúscula, número, especial) y consumido vía dos componentes nuevos: `components/password-input.tsx` (input con toggle ojito) y `components/password-rules.tsx` (checklist viva). Se aplica en signup y reset-password; el login no se toca.
 - Mensajería de Telegram: enriquecer mensajes **existentes** (`/start` y "cuenta no vinculada") — el brief mencionaba `/help`/`/login` que **no existen** en el bot.
-- Config externa (Supabase Dashboard): plantilla de email + whitelist de Redirect URLs. Es trabajo de dashboard, no de código; se documenta como requisito.
+- Config externa (Supabase Dashboard): plantilla de email + whitelist de Redirect URLs + PKCE confirmado. Es trabajo de dashboard, no de código; se documenta como requisito.
 
 ### Hallazgos que corrigen el brief
 
@@ -34,7 +36,9 @@ Documento de plan **previo a implementación**. Se basa en el [brief.md](brief.m
 | Cambios en `callback/route.ts` | **Ninguno funcional.** Opcional: si `next` apunta a `/reset-password` y el exchange falla, redirigir a `/forgot-password?error=expired` en vez de `/login`. | Minimiza superficie de cambio; el `next` param ya cubre el caso feliz. |
 | Anti-enumeración | `/forgot-password` muestra **siempre** el mismo mensaje genérico, ignore el resultado de `resetPasswordForEmail` (success o error). No render condicional según existencia del email. | Brief §4, riesgo #4. Supabase ya responde sin distinguir, pero el UI no debe filtrar. |
 | Guarda de `/reset-password` | Antes de mostrar el form, verificar sesión recovery con `supabase.auth.getUser()` en el client component. Sin usuario → estado "link expirado" + CTA a `/forgot-password`. | Brief §4: no dejar un form que dispare `updateUser` sin sesión. |
-| Validación de password | `minLength={6}` en el input + chequeo en submit + confirmación que debe coincidir. Consistente con `signup-form.tsx:68`. | Brief constraint. |
+| Validación de password | Esquema centralizado en `lib/auth/password.ts` (5 reglas: 8+, mayúscula, minúscula, número, especial). `validatePassword(value)` devuelve `{ valid, checks }`. El submit se deshabilita con `disabled={loading \|\| !valid \|\| password !== confirm}`; además se valida en `handleSubmit` por defensa. La función es **pura** (sin React) para poder reutilizarse desde server actions o tests. | Reemplaza el `minLength={6}` inicial. Una sola fuente de verdad evita desincronización entre la checklist visual y la validación del submit. |
+| Toggle de visibilidad | Componente `components/password-input.tsx` con SVG inline (sin librería de iconos), `aria-label`/`aria-pressed` para accesibilidad, `tabIndex={-1}` para no robar el foco del Tab. Se usa en signup y reset-password (input nuevo + confirmación, ojito independiente). No se usa en login. | UX estándar; evita errores de tipeo en contraseñas largas / con caracteres especiales. |
+| Middleware whitelist | `/forgot-password` y `/reset-password` se añaden al array `publicPaths` en `lib/supabase/middleware.ts`. Sin esto, el middleware redirige a `/login` a cualquier usuario sin sesión que intente acceder al flujo. | Descubierto en pruebas (`GET /login` en lugar de `/forgot-password`); el brief no lo había anticipado. |
 | Manejo de errores `updateUser` | Mapear a mensajes en español: sesión expirada, password débil, password igual a la anterior. Nunca loggear el password. | Brief §4. |
 | Look & feel | Copiar exactamente las clases Tailwind y estructura de `login-form.tsx` / `signup-form.tsx`. Mismo patrón de `error` box rojo + botón azul + estados de loading. | Brief constraint. |
 | Cliente Supabase | `createBrowserClient` con las mismas dos env públicas que login/signup. | Consistencia. |
@@ -45,47 +49,62 @@ Documento de plan **previo a implementación**. Se basa en el [brief.md](brief.m
 
 ## 2. Fases de implementación
 
-### Fase 0 — Spike / verificación (sin código)
+### Fase 0 — Spike / verificación (sin código) — ⚠️ pendiente (Dashboard, lo hace el owner)
 
 - [ ] Confirmar en el **Supabase Dashboard** que hay SMTP configurado (sin esto el email no llega). Documentar el estado.
 - [ ] Confirmar que existe la plantilla nativa **"Reset Password"** y revisar si existe **"Password changed"**.
 - [ ] Anotar las **Redirect URLs** que deben quedar en whitelist: `http://localhost:3000/auth/callback` (dev) y `${NEXT_PUBLIC_APP_URL}/auth/callback` (prod).
+- [ ] Confirmar que el proyecto usa **flujo PKCE** (el enlace del email trae `?code=...`), que es lo que asume el callback existente.
 
-### Fase 1 — Pantalla "Olvidé mi contraseña" (`/forgot-password`)
+### Fase 1 — Pantalla "Olvidé mi contraseña" (`/forgot-password`) — ✅ hecho
 
-- [ ] `apps/web/src/app/forgot-password/page.tsx` — server component contenedor (mismo layout `main` centrado que `login/page.tsx`). Si ya hay sesión, `redirect("/")`.
-- [ ] `apps/web/src/app/forgot-password/forgot-password-form.tsx` — client component:
-  - Input email + botón "Enviar link de recuperación".
+- [x] `apps/web/src/app/forgot-password/page.tsx` — server component contenedor (mismo layout `main` centrado que `login/page.tsx`). Si ya hay sesión, `redirect("/")`. **As-built:** además lee `searchParams.error` (como `Promise`, por el fork de Next) y muestra un banner ámbar cuando llega `?error=expired` desde el callback.
+- [x] `apps/web/src/app/forgot-password/forgot-password-form.tsx` — client component:
+  - Input email + botón "Enviar enlace de recuperación".
   - Submit: `await supabase.auth.resetPasswordForEmail(email, { redirectTo: \`${window.location.origin}/auth/callback?next=/reset-password\` })`.
-  - **Siempre** mostrar el mismo mensaje de éxito genérico ("Si existe una cuenta con ese email, te enviamos un link"), sin importar el resultado.
-- [ ] Link "¿Olvidaste tu contraseña?" en `login/page.tsx` apuntando a `/forgot-password` (debajo del `LoginForm`, mismo estilo que el link "Crear cuenta").
+  - **Siempre** muestra el mismo mensaje genérico (estado `sent`), sin importar el resultado. No se loggea nada.
+- [x] Link "¿Olvidaste tu contraseña?" en `login/page.tsx` apuntando a `/forgot-password` (encima del link "Crear cuenta", mismo estilo).
 
-### Fase 2 — Callback (hardening opcional)
+### Fase 1.5 — Middleware whitelist — ✅ hecho (descubierto en pruebas)
 
-- [ ] Revisar `app/auth/callback/route.ts`: confirmar que `next=/reset-password` se respeta (ya lo hace).
-- [ ] (Opcional) Si `next === "/reset-password"` y el exchange falla, redirigir a `/forgot-password?error=expired` en vez de `/login?error=auth_failed`, para un mensaje más claro.
+- [x] `apps/web/src/lib/supabase/middleware.ts`: añadir `/forgot-password` y `/reset-password` al array `publicPaths`. Sin esto, el middleware redirige a `/login` a cualquier usuario sin sesión que intente acceder al flujo (síntoma observado: logs muestran `GET /login` repetidos tras click en "¿Olvidaste tu contraseña?", ningún `GET /forgot-password`).
 
-### Fase 3 — Pantalla "Restablecer contraseña" (`/reset-password`)
+### Fase 2 — Callback (hardening) — ✅ hecho
 
-- [ ] `apps/web/src/app/reset-password/page.tsx` — server component contenedor. NO redirige por sesión (la sesión recovery ES una sesión válida); deja que el form maneje el estado.
-- [ ] `apps/web/src/app/reset-password/reset-password-form.tsx` — client component:
-  - Al montar: `supabase.auth.getUser()`. Sin usuario → render de estado "Este link ya no es válido" + link a `/forgot-password`.
-  - Con usuario: inputs nueva contraseña + confirmación (`minLength={6}`, deben coincidir).
+- [x] `app/auth/callback/route.ts`: confirmado que `next=/reset-password` se respeta (ya lo hacía).
+- [x] Hardening **incluido**: si el exchange falla y `next === "/reset-password"`, redirige a `/forgot-password?error=expired` en vez de `/login?error=auth_failed`.
+
+### Fase 3 — Pantalla "Restablecer contraseña" (`/reset-password`) — ✅ hecho
+
+- [x] `apps/web/src/app/reset-password/page.tsx` — server component contenedor. NO redirige por sesión (la sesión recovery ES válida); el form maneja el estado.
+- [x] `apps/web/src/app/reset-password/reset-password-form.tsx` — client component:
+  - Al montar: `supabase.auth.getUser()`. Sin usuario → estado "Este enlace ya no es válido" + CTA a `/forgot-password`. Estado `checking` muestra "Verificando enlace...".
+  - Con usuario: inputs nueva contraseña + confirmación usando `<PasswordInput>` (ojito independiente en cada uno). Checklist viva (`<PasswordRules>`) bajo el primer input. Submit deshabilitado hasta `validatePassword(password).valid && password === confirm`.
   - Submit: `await supabase.auth.updateUser({ password })`. Éxito → `router.push("/")` + `router.refresh()`.
-  - Errores mapeados a español; nunca loggear el password.
+  - Errores muestran el mensaje de Supabase; nunca se loggea el password.
 
-### Fase 4 — Telegram (informativo)
+### Fase 4 — Telegram (informativo) — ✅ hecho
 
-- [ ] En `app/api/telegram/webhook/route.ts`:
-  - Mensaje de `/start` (`:146`): añadir línea con `${NEXT_PUBLIC_APP_URL}/forgot-password` para recuperar contraseña.
-  - Mensaje "No tienes una cuenta vinculada" (`:199`): mencionar también la URL de recuperación.
-- [ ] Leer la URL desde `process.env.NEXT_PUBLIC_APP_URL` (con fallback razonable). No hardcodear.
+- [x] En `app/api/telegram/webhook/route.ts`:
+  - Mensaje de `/start`: añade línea con `${WEB_URL}/forgot-password`.
+  - Mensaje "No tienes una cuenta vinculada": menciona también la URL de recuperación.
+- [x] URL desde `process.env.NEXT_PUBLIC_APP_URL` con fallback `http://localhost:3000`, en una constante `WEB_URL` a nivel de módulo. Sin hardcodear.
 
-### Fase 5 — Docs & cierre
+### Fase 5 — Docs & cierre — ✅ hecho
 
-- [ ] Actualizar `apps/web/README.md` (o el README del proyecto): flujo de recuperación + requisitos de Supabase (SMTP, Redirect URLs en whitelist).
-- [ ] `.env.example`: confirmar que `NEXT_PUBLIC_APP_URL` está documentada (ya existe). No se agregan vars nuevas.
-- [ ] Marcar checkboxes del brief §6 (Definition of Done) y consolidar este plan como **as-built**.
+- [x] **No existe `apps/web/README.md` ni `.env.example` en el repo.** Los requisitos de Supabase (SMTP, Redirect URLs, PKCE) se documentan en §7 en su lugar.
+- [x] `NEXT_PUBLIC_APP_URL` ya se usa en el código (OAuth Google/GitHub); no se agregan vars nuevas.
+- [x] Checkboxes del brief §6 marcados y este plan consolidado como **as-built**. `type-check` del web pasa.
+
+### Fase 6 — Esquema de contraseña y toggle de visibilidad — ✅ hecho (add-on)
+
+Añadido tras la primera ronda, a petición del usuario, para mejorar UX y endurecer el esquema. Aplica a signup y reset-password; el login se deja intacto.
+
+- [x] `apps/web/src/lib/auth/password.ts` — define `PASSWORD_RULES` (5 reglas: 8+, mayúscula, minúscula, número, especial) y `validatePassword(value): { valid, checks }`. Función pura sin React, reutilizable desde el servidor.
+- [x] `apps/web/src/components/password-input.tsx` — input con toggle ojito (SVG inline, sin librería de iconos). `aria-label`/`aria-pressed` para accesibilidad. `tabIndex={-1}` en el botón para no robar el foco del Tab.
+- [x] `apps/web/src/components/password-rules.tsx` — checklist visual: cada regla `○` gris pasa a `✓` verde al cumplirse.
+- [x] `apps/web/src/app/signup/signup-form.tsx` — sustituye el input plano por `<PasswordInput>`, agrega `<PasswordRules>`, valida con `validatePassword`. Botón submit `disabled={loading || !valid}`. Quita `minLength={6}` (ahora 8+ por esquema).
+- [x] `apps/web/src/app/reset-password/reset-password-form.tsx` — mismo patrón. Botón submit `disabled={loading || !valid || password !== confirm}`. Cada input (nuevo + confirmación) con ojito independiente.
 
 ---
 
@@ -98,11 +117,17 @@ Documento de plan **previo a implementación**. Se basa en el [brief.md](brief.m
 | `app/reset-password/page.tsx` | **nuevo** |
 | `app/reset-password/reset-password-form.tsx` | **nuevo** |
 | `app/login/page.tsx` | editar (link a forgot-password) |
-| `app/auth/callback/route.ts` | editar opcional (mensaje de error de recovery) |
-| `app/api/telegram/webhook/route.ts` | editar (2 mensajes) |
-| `apps/web/README.md` | editar (documentar flujo + requisitos Supabase) |
+| `app/auth/callback/route.ts` | editar (hardening: `next=/reset-password` → `/forgot-password?error=expired` ante fallo) |
+| `app/api/telegram/webhook/route.ts` | editar (2 mensajes con URL de recuperación) |
+| `lib/supabase/middleware.ts` | editar (whitelist `/forgot-password` y `/reset-password`) |
+| `lib/auth/password.ts` | **nuevo** (esquema + `validatePassword`) |
+| `components/password-input.tsx` | **nuevo** (input + toggle ojito) |
+| `components/password-rules.tsx` | **nuevo** (checklist visual) |
+| `app/signup/signup-form.tsx` | editar (adoptar `<PasswordInput>` + `<PasswordRules>` + `validatePassword`) |
 
-Config fuera del repo (Supabase Dashboard): plantilla email + Redirect URLs whitelist. **No es código.**
+Config fuera del repo (Supabase Dashboard): plantilla email + Redirect URLs whitelist + flujo PKCE. **No es código.** Ver §7.
+
+> Nota: el brief mencionaba editar `apps/web/README.md`, pero ese archivo no existe en el repo; los requisitos del Dashboard se documentan aquí en §7 en su lugar.
 
 ---
 
@@ -117,11 +142,13 @@ Config fuera del repo (Supabase Dashboard): plantilla email + Redirect URLs whit
 
 ## 5. Validación
 
-- [ ] `type-check` del web pasa sin errores, sin `any`.
-- [ ] Manual: olvidé contraseña → email → link → `/reset-password` → nueva pass → entro a `/`. Login con pass vieja falla, con la nueva funciona.
-- [ ] `/forgot-password` con email inexistente devuelve **el mismo** mensaje que con uno existente.
-- [ ] `/reset-password` sin sesión recovery muestra estado "link expirado".
-- [ ] Telegram `/start` y mensaje de no-vinculado mencionan la URL de recuperación.
+- [x] `type-check` del web pasa sin errores, sin `any`.
+- [x] `/forgot-password` con email inexistente devuelve **el mismo** mensaje que con uno existente (estado `sent` mostrado siempre, sin discriminar el resultado de `resetPasswordForEmail`).
+- [x] `/reset-password` sin sesión recovery muestra estado "link expirado" (validado por code review del flujo `useEffect` + `getUser`).
+- [x] `/forgot-password` y `/reset-password` accesibles sin sesión (confirmado en pruebas: `GET /forgot-password 200` tras añadir al whitelist del middleware).
+- [x] Telegram `/start` y mensaje de no-vinculado mencionan la URL de recuperación.
+- [x] Signup y reset-password rechazan contraseñas que no cumplen el esquema; checklist y ojito visibles.
+- [~] **Manual end-to-end pendiente**: olvidé contraseña → recibir email → link → `/reset-password` → nueva pass → entro a `/`. Login con pass vieja falla, con la nueva funciona. Bloqueado por entrega de email vía SMTP por defecto de Supabase; ver §7.
 
 ---
 
@@ -130,3 +157,28 @@ Config fuera del repo (Supabase Dashboard): plantilla email + Redirect URLs whit
 - Email propio "Password changed" si la plantilla nativa no existe (riesgo #6).
 - Invalidar otras sesiones tras el reset (`signOut({ scope: 'others' })`, riesgo #8).
 - Cambio de contraseña desde settings/perfil (otra feature).
+
+---
+
+## 7. Configuración requerida en Supabase Dashboard (bloqueante, no es código)
+
+El código está completo, pero el flujo end-to-end **no funcionará** hasta que el owner del proyecto Supabase configure lo siguiente. No tengo acceso al Dashboard.
+
+1. **Redirect URLs** — Authentication → URL Configuration → Redirect URLs. Agregar a la whitelist:
+   - `http://localhost:3000/auth/callback` (dev)
+   - `https://TU-DOMINIO/auth/callback` (prod, debe coincidir con `NEXT_PUBLIC_APP_URL`)
+   - Confirmar también el **Site URL** de producción.
+   - Sin esto, el email llega pero el enlace cae en la home (riesgo #3).
+2. **SMTP** — Authentication → Emails. Confirmar que el envío funciona. El SMTP por defecto de Supabase sirve para probar pero tiene límites bajos; para producción, SMTP propio (riesgo #2).
+3. **Plantilla "Reset Password"** — Authentication → Email Templates. Opcional: adaptar copy a español. Confirmar que el proyecto usa **flujo PKCE** (el enlace trae `?code=...`), que es lo que asume `auth/callback/route.ts`.
+4. *(Opcional, follow-up)* Plantilla "Password changed" para notificar el cambio.
+
+### Cómo probar (manual, una vez configurado el Dashboard)
+
+1. `/login` → click "¿Olvidaste tu contraseña?".
+2. `/forgot-password` → ingresar email → mensaje genérico siempre.
+3. Revisar email → click enlace → aterrizar en `/reset-password` con sesión recovery.
+4. Nueva contraseña + confirmación → entrar a `/` autenticado.
+5. Login con la contraseña vieja falla; con la nueva funciona.
+6. Acceder a `/reset-password` sin sesión recovery → estado "enlace expirado".
+7. Email inexistente en `/forgot-password` → exactamente el mismo mensaje.
