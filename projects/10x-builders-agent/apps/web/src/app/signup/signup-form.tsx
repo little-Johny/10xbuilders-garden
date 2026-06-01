@@ -3,6 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createBrowserClient } from "@supabase/ssr";
+import { PasswordInput } from "@/components/password-input";
+import { PasswordRules } from "@/components/password-rules";
+import { validatePassword } from "@/lib/auth/password";
 
 export function SignupForm() {
   const [email, setEmail] = useState("");
@@ -16,11 +19,18 @@ export function SignupForm() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   );
 
+  const { valid, checks } = validatePassword(password);
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setLoading(true);
     setError(null);
 
+    if (!valid) {
+      setError("La contraseña no cumple con todos los requisitos.");
+      return;
+    }
+
+    setLoading(true);
     const { error } = await supabase.auth.signUp({
       email,
       password,
@@ -57,23 +67,18 @@ export function SignupForm() {
           className="w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-neutral-700 dark:bg-neutral-900"
         />
       </div>
-      <div>
-        <label htmlFor="password" className="block text-sm font-medium mb-1">
-          Contraseña
-        </label>
-        <input
-          id="password"
-          type="password"
-          required
-          minLength={6}
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-neutral-700 dark:bg-neutral-900"
-        />
-      </div>
+      <PasswordInput
+        id="password"
+        label="Contraseña"
+        value={password}
+        onChange={setPassword}
+        autoComplete="new-password"
+        required
+      />
+      <PasswordRules checks={checks} />
       <button
         type="submit"
-        disabled={loading}
+        disabled={loading || !valid}
         className="w-full rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
       >
         {loading ? "Creando cuenta..." : "Crear cuenta"}
