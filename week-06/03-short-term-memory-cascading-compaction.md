@@ -176,5 +176,5 @@ La memoria a corto plazo de un agente no es magia ni un detalle de configuració
 - [LangGraph.js — Memory management](https://langchain-ai.github.io/langgraphjs/concepts/memory/) — documentación oficial de gestión de memoria en LangGraph.
 - [LangGraph.js — `messagesStateReducer`](https://langchain-ai.github.io/langgraphjs/concepts/low_level/#reducers) — referencia del reducer oficial usado para reemplazo y eliminación de mensajes por id.
 - [Anthropic — Effective context engineering](https://www.anthropic.com/news/context-engineering-for-agents) — buenas prácticas que inspiran la estrategia de cascada.
-- Conexión interna: [Memoria en Agentes de IA: Fundamentos](./01-memoria-agentes-ia-fundamentos.md) — base conceptual de memoria a corto/largo plazo.
+- Conexión interna: [Memoria en Agentes de IA: Fundamentos](./01-ai-agent-memory-fundamentals.md) — base conceptual de memoria a corto/largo plazo.
 - Conexión interna: [Context Rot y Context Engineering](./02-context-rot-and-context-engineering.md) — por qué curar el contexto importa más que ampliarlo.

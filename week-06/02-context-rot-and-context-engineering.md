@@ -84,4 +84,4 @@ La ventana de contexto es finita y, además, **degradable**: incluso cuando los 
 - [Chroma — Context Rot research](https://www.trychroma.com/) — empresa que publicó el estudio mencionado en clase sobre degradación medida con distancia de Levenshtein.
 - [Distancia de Levenshtein — Wikipedia](https://es.wikipedia.org/wiki/Distancia_de_Levenshtein) — métrica usada para cuantificar cuánto se aleja una salida del texto esperado.
 - [Anthropic — Long context tips](https://docs.claude.com/en/docs/build-with-claude/prompt-engineering/long-context-tips) — buenas prácticas oficiales para prompts largos.
-- Conexión interna: [Memoria en Agentes de IA: Fundamentos](./01-memoria-agentes-ia-fundamentos.md) — sesión 1 del módulo, base conceptual de memoria a corto/largo plazo.
+- Conexión interna: [Memoria en Agentes de IA: Fundamentos](./01-ai-agent-memory-fundamentals.md) — sesión 1 del módulo, base conceptual de memoria a corto/largo plazo.
