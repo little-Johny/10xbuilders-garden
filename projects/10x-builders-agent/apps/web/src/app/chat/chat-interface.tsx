@@ -94,10 +94,23 @@ export function ChatInterface({ agentName, initialMessages }: Props) {
   const [loading, setLoading] = useState(false);
   const [busyConfirmId, setBusyConfirmId] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  // Aborta la petición en vuelo cuando el usuario pulsa "Detener".
+  const abortRef = useRef<AbortController | null>(null);
+  // Texto del turno en vuelo: si se cancela, lo devolvemos al input para editar.
+  const pendingTextRef = useRef<string>("");
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [items]);
+
+  // Auto-crecimiento del textarea según el contenido (con tope de altura).
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
+  }, [input]);
 
   function appendAssistantText(text: string) {
     setItems((prev) => [...prev, { kind: "message", role: "assistant", content: text }]);
@@ -117,29 +130,70 @@ export function ChatInterface({ agentName, initialMessages }: Props) {
     );
   }
 
-  async function handleSend(e: React.FormEvent) {
-    e.preventDefault();
+  async function submitMessage() {
     const text = input.trim();
     if (!text || loading) return;
 
+    pendingTextRef.current = text;
     setItems((prev) => [...prev, { kind: "message", role: "user", content: text }]);
     setInput("");
     setLoading(true);
+
+    const controller = new AbortController();
+    abortRef.current = controller;
 
     try {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: text }),
+        signal: controller.signal,
       });
       const data = await res.json();
       if (data.response) appendAssistantText(data.response);
       if (data.pendingConfirmation) appendPending(data.pendingConfirmation);
-    } catch {
-      appendAssistantText("Error al procesar tu mensaje. Intenta de nuevo.");
+    } catch (err) {
+      // Cancelación del usuario: handleStop ya quitó la burbuja y restauró el
+      // texto, así que no mostramos error.
+      if (!(err instanceof DOMException && err.name === "AbortError")) {
+        appendAssistantText("Error al procesar tu mensaje. Intenta de nuevo.");
+      }
     } finally {
       setLoading(false);
+      abortRef.current = null;
     }
+  }
+
+  function handleSend(e: React.FormEvent) {
+    e.preventDefault();
+    void submitMessage();
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
+    // Enter envía; Shift+Enter inserta un salto de línea (comportamiento nativo).
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      void submitMessage();
+    }
+  }
+
+  /**
+   * Cancela el turno en vuelo. Aborta el fetch, quita la burbuja optimista del
+   * usuario y devuelve el texto al input para completarlo y reenviarlo. Nota: el
+   * servidor ya arrancó y persistirá el mensaje igualmente (aparecerá al recargar).
+   */
+  function handleStop() {
+    abortRef.current?.abort();
+    setItems((prev) => {
+      for (let i = prev.length - 1; i >= 0; i--) {
+        const it = prev[i];
+        if (it.kind === "message" && it.role === "user") {
+          return prev.filter((_, idx) => idx !== i);
+        }
+      }
+      return prev;
+    });
+    if (pendingTextRef.current) setInput(pendingTextRef.current);
   }
 
   async function handleConfirm(toolCallId: string, decision: "approve" | "reject") {
@@ -240,23 +294,35 @@ export function ChatInterface({ agentName, initialMessages }: Props) {
         </div>
       </div>
 
-      <div className="border-t border-neutral-200 px-4 py-3 dark:border-neutral-800">
-        <form onSubmit={handleSend} className="mx-auto flex max-w-2xl gap-2">
-          <input
-            type="text"
+      <div className="sticky bottom-0 z-10 border-t border-neutral-200 px-4 py-3 dark:border-neutral-800 bg-black">
+        <form onSubmit={handleSend} className="mx-auto flex max-w-2xl items-end gap-2">
+          <textarea
+            ref={textareaRef}
+            rows={1}
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Escribe tu mensaje..."
+            onKeyDown={handleKeyDown}
+            placeholder="Escribe tu mensaje...  (Shift+Enter para salto de línea)"
             disabled={loading}
-            className="flex-1 rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-900"
+            className="flex-1 resize-none overflow-y-auto rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-900"
           />
-          <button
-            type="submit"
-            disabled={loading || !input.trim()}
-            className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
-          >
-            Enviar
-          </button>
+          {loading ? (
+            <button
+              type="button"
+              onClick={handleStop}
+              className="rounded-md border border-red-300 bg-red-50 px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-100 dark:border-red-800 dark:bg-red-900/30 dark:text-red-300 dark:hover:bg-red-900/50"
+            >
+              Detener
+            </button>
+          ) : (
+            <button
+              type="submit"
+              disabled={!input.trim()}
+              className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+            >
+              Enviar
+            </button>
+          )}
         </form>
       </div>
     </div>
