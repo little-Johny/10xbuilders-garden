@@ -50,6 +50,9 @@ export function SettingsForm({
   const [name, setName] = useState((profile?.name as string) ?? "");
   const [agentName, setAgentName] = useState((profile?.agent_name as string) ?? "Agente");
   const [systemPrompt, setSystemPrompt] = useState((profile?.agent_system_prompt as string) ?? "");
+  const [idleMinutes, setIdleMinutes] = useState<number>(
+    (profile?.memory_flush_idle_minutes as number) ?? 30,
+  );
   const [enabledTools, setEnabledTools] = useState<string[]>(
     toolSettings.filter((t) => t.enabled).map((t) => t.tool_id),
   );
@@ -67,12 +70,14 @@ export function SettingsForm({
   async function handleSave() {
     setSaving(true);
 
+    const clampedIdle = Math.min(1440, Math.max(5, Math.round(idleMinutes || 30)));
     await supabase
       .from("profiles")
       .update({
         name,
         agent_name: agentName,
         agent_system_prompt: systemPrompt.slice(0, 500),
+        memory_flush_idle_minutes: clampedIdle,
         updated_at: new Date().toISOString(),
       })
       .eq("id", userId);
@@ -168,6 +173,24 @@ export function SettingsForm({
             className="w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-900"
           />
           <p className="text-xs text-neutral-400 text-right mt-1">{systemPrompt.length}/500</p>
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1">
+            Cerrar conversación tras inactividad (minutos)
+          </label>
+          <input
+            type="number"
+            min={5}
+            max={1440}
+            value={idleMinutes}
+            onChange={(e) => setIdleMinutes(Number(e.target.value))}
+            className="w-32 rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-900"
+          />
+          <p className="text-xs text-neutral-400 mt-1">
+            Pasado este tiempo sin actividad, el agente cierra la conversación y guarda
+            lo aprendido en su memoria. Entre 5 y 1440 minutos. El botón “Nueva
+            conversación” cierra al instante sin esperar este tiempo.
+          </p>
         </div>
       </section>
 

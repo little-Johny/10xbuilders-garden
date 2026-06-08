@@ -37,6 +37,8 @@ export interface Profile {
   agent_name: string;
   agent_system_prompt: string;
   onboarding_completed: boolean;
+  /** Minutos de inactividad tras los que el sweep cierra/flushea la sesión (5–1440). */
+  memory_flush_idle_minutes: number;
   created_at: string;
   updated_at: string;
 }
@@ -71,6 +73,22 @@ export interface AgentSession {
   budget_tokens_limit: number;
   created_at: string;
   updated_at: string;
+  /** Set when memory_flush finished for this (closed) session. Null = pending/retry. */
+  flushed_at?: string | null;
+}
+
+export type MemoryType = "episodic" | "semantic" | "procedural";
+
+export interface Memory {
+  id: string;
+  user_id: string;
+  type: MemoryType;
+  content: string;
+  /** Embedding vector (1536 dims, text-embedding-3-small). */
+  embedding: number[];
+  retrieval_count: number;
+  created_at: string;
+  last_retrieved_at: string | null;
 }
 
 export type MessageRole = "user" | "assistant" | "tool" | "system";
