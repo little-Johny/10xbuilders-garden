@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
-import { createServerClient, getPendingToolCall } from "@agents/db";
+import { createServerClient, getPendingToolCall, closeSession, markSessionFlushed } from "@agents/db";
 import {
   AlreadyResolvedError,
   confirmationKeyboard,
   runAgent,
   sendTelegramMessage,
+  memoryFlush
 } from "@agents/agent";
 import { loadAgentContext } from "@/lib/agent/load-context";
 
@@ -205,6 +206,19 @@ export async function POST(request: Request) {
   }
 
   const userId = telegramAccount.user_id;
+
+  if (command === "/reset") {
+    const closed = await closeSession(db, userId, "telegram");
+    if (closed) {
+      await sendTelegramMessage(chatId, "Guardando lo aprendido e iniciando una conversación nueva …");
+      await memoryFlush({ db, userId, sessionId: closed.id });
+      await markSessionFlushed(db, closed.id);
+      await sendTelegramMessage(chatId, "Listo ✅ Empezamos de cero. Tu memoria sigue intacta.");
+    } else {
+      await sendTelegramMessage(chatId, "No había una conversación activa; ya estás en una nueva.");
+    }
+    return NextResponse.json({ ok: true });
+  }
 
   let session = await db
     .from("agent_sessions")

@@ -56,7 +56,8 @@ Es best-effort: nunca lanza hacia el caller; los fallos se loguean.
 
 | Vía | Cómo | Latencia |
 |---|---|---|
-| **Explícita** | Botón "Nueva conversación" → `POST /api/sessions/close` | Flush síncrono, al instante |
+| **Explícita (web)** | Botón "Nueva conversación" → `POST /api/sessions/close` | Flush síncrono, al instante |
+| **Explícita (Telegram)** | Comando `/reset` en el chat del bot (cierra + flushea desde el webhook) | Flush síncrono, al instante |
 | **Automática** | pg_cron → `POST /api/memory/flush-tick` (sweep de inactividad) | Tras el umbral del usuario |
 
 Ambas reclaman la sesión con CAS (`active→closed`) y llaman a la misma `memoryFlush`. El cierre explícito **no** crea la sesión nueva: al quedar sin sesión activa, el siguiente mensaje la crea vía `getOrCreateSession`. No se borran mensajes; la sesión `closed` y su historial quedan en la BD.
