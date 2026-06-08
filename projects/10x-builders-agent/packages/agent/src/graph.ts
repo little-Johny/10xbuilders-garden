@@ -15,6 +15,7 @@ import { getToolRisk } from "./tools/catalog";
 import { getCheckpointer } from "./checkpointer";
 import { GraphState } from "./state";
 import { compactionNode } from "./nodes/compaction_node";
+import { makeMemoryInjectionNode } from "./memory_injection_node";
 import {
   addMessage,
   createToolCall,
@@ -312,11 +313,19 @@ export async function runAgent(input: AgentInput): Promise<AgentOutput> {
     return "end";
   }
 
+  // memory_injection corre UNA vez por turno (en __start__), antes de compaction.
+  // El loop tools→compaction nunca vuelve a este nodo, así que no se re-recuperan
+  // recuerdos en cada iteración. En un resume de HITL el grafo retoma en `tools`,
+  // no en __start__, por lo que tampoco se re-inyecta.
+  const memoryInjectionNode = makeMemoryInjectionNode(db);
+
   const graph = new StateGraph(GraphState)
+    .addNode("memory_injection", memoryInjectionNode)
     .addNode("compaction", compactionNode)
     .addNode("agent", agentNode)
     .addNode("tools", toolExecutorNode)
-    .addEdge("__start__", "compaction")
+    .addEdge("__start__", "memory_injection")
+    .addEdge("memory_injection", "compaction")
     .addEdge("compaction", "agent")
     .addConditionalEdges("agent", shouldContinueAfterAgent, {
       tools: "tools",

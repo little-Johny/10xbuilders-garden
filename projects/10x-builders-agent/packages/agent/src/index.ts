@@ -12,3 +12,5 @@ export type {
   NotificationChannelAdapter,
 } from "./notifications";
 export { evaluateCron, validateCron } from "./tools/cron-utils";
+export { generateEmbedding } from "./embeddings";
+export { memoryFlush } from "./memory_flush";
