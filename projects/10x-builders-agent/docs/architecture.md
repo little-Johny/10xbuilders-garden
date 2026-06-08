@@ -40,8 +40,12 @@
 │           │       ├── telegram/
 │           │       │   ├── webhook/           # POST → bot Telegram
 │           │       │   └── setup/             # GET → registrar webhook
-│           │       └── scheduled-tasks/
-│           │           └── tick/              # POST (cron-only) → dispara tareas due
+│           │       ├── scheduled-tasks/
+│           │       │   └── tick/              # POST (cron-only) → dispara tareas due
+│           │       ├── memory/
+│           │       │   └── flush-tick/        # POST (cron-only) → flush de sesiones inactivas
+│           │       └── sessions/
+│           │           └── close/             # POST → cierre explícito + flush síncrono
 │           ├── components/                   # Componentes compartidos (PasswordInput, PasswordRules)
 │           ├── lib/
 │           │   ├── agent/
@@ -56,8 +60,11 @@
 ├── packages/
 │   ├── agent/                     # LangGraph grafo + tools
 │   │   └── src/
-│   │       ├── graph.ts           # StateGraph: agent → tools → agent loop, flag autonomous
-│   │       ├── model.ts           # ChatOpenAI vía OpenRouter
+│   │       ├── graph.ts           # StateGraph: memory_injection → compaction → agent → tools loop
+│   │       ├── model.ts           # ChatOpenAI vía OpenRouter (chat, compaction, memory)
+│   │       ├── embeddings.ts      # generateEmbedding() por fetch a OpenRouter (1536 dims)
+│   │       ├── memory_injection_node.ts # Nodo: recupera top-K e inyecta [MEMORIA DEL USUARIO]
+│   │       ├── memory_flush.ts    # Extracción post-sesión: destila + deduplica + guarda
 │   │       ├── types.ts           # IntegrationsContext, PendingConfirmation
 │   │       ├── integrations/
 │   │       │   └── github.ts      # Cliente REST mínimo de GitHub API
@@ -104,6 +111,9 @@
 │       │   └── plan.md                # Plan de las file tools (read/write/edit)
 │       ├── compaction/
 │       │   └── plan.md                # Plan de la memoria a corto plazo del agente
+│       ├── long-term-memory/
+│       │   ├── README.md              # Guía de uso + setup del flush por inactividad
+│       │   └── plan.md                # Plan de la memoria a largo plazo
 │       └── password-recovery/
 │           ├── brief.md               # Brief del flujo de recuperación de contraseña
 │           └── plan.md                # Plan as-built del flujo de recuperación
@@ -174,8 +184,8 @@ Diseño detallado en [docs/features/github/README.md](features/github/README.md)
 
 ## LangGraph: grafo simplificado
 
-- **StateGraph** con tres nodos: `compaction` (memoria a corto plazo), `agent` (invoca modelo con tools) y `tools` (ejecuta tool calls).
-- **Topología**: `__start__ → compaction → agent → (tools | __end__)`, con `tools → compaction` (el edge crítico: cada tool result pasa por compaction antes de volver al agente).
+- **StateGraph** con cuatro nodos: `memory_injection` (memoria a largo plazo, inicio de turno), `compaction` (memoria a corto plazo), `agent` (invoca modelo con tools) y `tools` (ejecuta tool calls).
+- **Topología**: `__start__ → memory_injection → compaction → agent → (tools | __end__)`, con `tools → compaction` (el edge crítico: cada tool result pasa por compaction antes de volver al agente). `memory_injection` corre solo en `__start__`, una vez por turno; el loop nunca vuelve a él.
 - **Arista condicional** desde `agent`: si hay tool calls → `tools`; si no → `__end__`.
 - **PostgresSaver** como checkpointer (thread_id = uuid por turno, ver `graph.ts`).
 - Máximo 6 iteraciones de tool para evitar loops.
@@ -192,6 +202,17 @@ El reducer de `messages` es `messagesStateReducer` (oficial de `@langchain/langg
 
 Diseño completo en [features/compaction/plan.md](features/compaction/plan.md).
 
+### Memoria a largo plazo (memory_injection + memory_flush)
+
+Si la compactación gobierna el contexto **dentro** de una sesión, la memoria a largo plazo gobierna qué sobrevive **entre** sesiones. Cruza la información por `user_id` en la tabla `memories` (pgvector). Dos procesos separados:
+
+- **`memory_injection` (síncrono, nodo del grafo):** primer nodo en `__start__`. Embebe el último mensaje del usuario (`generateEmbedding`), recupera por cosine similarity el top-K de `memories` (`match_memories`, default 6 vía `MEMORY_RETRIEVAL_K`), sube su `retrieval_count` (`bump_retrieval_count`) e inyecta los recuerdos en el `SystemMessage` líder como bloque `[MEMORIA DEL USUARIO]` (reemplazo por id vía `messagesStateReducer`). Corre una vez por turno y degrada a passthrough si no hay input/recuerdos/embeddings.
+- **`memory_flush` (asíncrono, fuera del grafo):** se dispara al **cerrar** una sesión, por dos vías que convergen en la misma función — cierre **explícito** (`POST /api/sessions/close`, botón "Nueva conversación", flush síncrono) y **sweep de inactividad** (`POST /api/memory/flush-tick`, pg_cron + service-role, CAS `active→closed`, reintento vía `flushed_at`). Lee el historial, extrae hechos durables con `createMemoryModel` (prompt conservador, clasificación `episodic`/`semantic`/`procedural`), deduplica (intra-lote + por embedding contra lo almacenado, reforzando el duplicado) y guarda solo lo nuevo.
+
+El umbral de inactividad es **por usuario** (`profiles.memory_flush_idle_minutes`, default 30, rango 5–1440, editable en Ajustes); `MEMORY_FLUSH_IDLE_MINUTES` es el fallback. Embeddings vía `fetch` directo a OpenRouter (`packages/agent/src/embeddings.ts`, `OPENROUTER_EMBEDDING_MODEL`).
+
+Diseño en [features/long-term-memory/plan.md](features/long-term-memory/plan.md), guía operativa en [features/long-term-memory/README.md](features/long-term-memory/README.md).
+
 ## LangChain: qué usamos
 
 - `@langchain/core`: `HumanMessage`, `AIMessage`, `SystemMessage`, `ToolMessage`, `tool()`.
@@ -206,8 +227,10 @@ Migración GitHub: `packages/db/supabase/migrations/00002_github_integration.sql
 Migración Google Calendar: `packages/db/supabase/migrations/00003_google_integration.sql`.
 Migración HITL nativo: `packages/db/supabase/migrations/00004_tool_calls_thread_id.sql`.
 Migración tareas programadas: `packages/db/supabase/migrations/00005_scheduled_tasks.sql`.
+Migración memoria a largo plazo: `packages/db/supabase/migrations/00006_long_term_memory.sql` (pgvector + tabla `memories` + funciones + `agent_sessions.flushed_at`).
+Migración umbral de inactividad: `packages/db/supabase/migrations/00007_memory_idle_setting.sql` (`profiles.memory_flush_idle_minutes`).
 
-Tablas: `profiles`, `user_integrations`, `user_tool_settings`, `agent_sessions`, `agent_messages`, `tool_calls`, `telegram_accounts`, `telegram_link_codes`, `scheduled_tasks`.
+Tablas: `profiles`, `user_integrations`, `user_tool_settings`, `agent_sessions`, `agent_messages`, `tool_calls`, `telegram_accounts`, `telegram_link_codes`, `scheduled_tasks`, `memories`.
 
 Campos añadidos por migración 00002 en `user_integrations`:
 - `provider_account_id` — ID numérico estable del proveedor (ej. GitHub user ID).
