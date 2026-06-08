@@ -83,6 +83,12 @@ Next.js carga `.env*` desde el directorio de la app **`apps/web`**, no desde la 
    | `OPENROUTER_API_KEY` | Clave de OpenRouter |
    | `OPENROUTER_MODEL` | Slug del modelo principal del agente en OpenRouter (ej. `openai/gpt-oss-120b:free`) |
    | `OPENROUTER_COMPACTION_MODEL` | Slug del modelo dedicado a compactar el historial (memoria a corto plazo del agente). Diseño en [docs/features/compaction/plan.md](docs/features/compaction/plan.md) |
+   | `OPENROUTER_MEMORY_MODEL` | *(Opcional)* Slug del modelo de extracción de memoria a largo plazo (memory flush). Si no se define, cae a `OPENROUTER_COMPACTION_MODEL`. Diseño en [docs/features/long-term-memory/plan.md](docs/features/long-term-memory/plan.md) |
+   | `OPENROUTER_EMBEDDING_MODEL` | *(Opcional)* Modelo de embeddings vía OpenRouter. Default `openai/text-embedding-3-small` (1536 dims) |
+   | `MEMORY_FLUSH_IDLE_MINUTES` | *(Opcional)* Fallback del umbral de inactividad para el flush automático (default `30`). El valor por usuario (`profiles.memory_flush_idle_minutes`, editable en Ajustes) tiene prioridad |
+   | `MEMORY_FLUSH_MIN_TURNS` | *(Opcional)* Mínimo de turnos de usuario para que una sesión se flushee (default `2`) |
+   | `MEMORY_RETRIEVAL_K` | *(Opcional)* Top-K de recuerdos a inyectar por turno (default `6`) |
+   | `MEMORY_DEDUP_THRESHOLD` | *(Opcional)* Cosine mínima para considerar un hecho duplicado al guardar (default `0.90`) |
    | `OAUTH_ENCRYPTION_KEY` | Clave para cifrar/descifrar tokens OAuth de terceros (AES-256-GCM). Genera con `openssl rand -base64 32` |
    | `GITHUB_CLIENT_ID` | *(Opcional)* Client ID de la GitHub OAuth App |
    | `GITHUB_CLIENT_SECRET` | *(Opcional)* Client Secret de la GitHub OAuth App |
@@ -243,6 +249,43 @@ Para apagar: `select cron.unschedule('scheduled-tasks-tick');`. Detalles operati
 
 ---
 
+## Paso 12 — Memoria a largo plazo
+
+El agente recuerda al usuario entre sesiones: destila hechos durables al cerrar una conversación y los recupera al iniciar la siguiente. La **recuperación/inyección** funciona en cuanto apliques las migraciones (no requiere config extra). El **flush** se dispara de dos formas: con el botón "Nueva conversación" (inmediato) y con un sweep de inactividad por pg_cron (opcional).
+
+1. **Migraciones**: aplica `00006_long_term_memory.sql` (pgvector + tabla `memories`) y `00007_memory_idle_setting.sql`. Confirma que la extensión `vector` quedó habilitada (Dashboard → Database → Extensions).
+
+2. **(Opcional) Flush automático por inactividad** — registra el job en **Supabase Dashboard → SQL Editor** (reutiliza el `CRON_SECRET` y las extensiones de tareas programadas):
+
+   ```sql
+   select cron.schedule(
+     'memory-flush-tick',
+     '*/5 * * * *',
+     $$
+       select net.http_post(
+         url     := 'https://TU_DOMINIO/api/memory/flush-tick',
+         headers := jsonb_build_object(
+                      'Content-Type', 'application/json',
+                      'x-cron-secret', 'PEGAR_AQUI_EL_VALOR_DE_CRON_SECRET'
+                    ),
+         body    := '{}'::jsonb
+       ) as request_id;
+     $$
+   );
+   ```
+
+   Cada usuario configura su umbral de inactividad en **Ajustes → Agente** (default 30 min). Para apagar: `select cron.unschedule('memory-flush-tick');`.
+
+Validación rápida sin esperar el cron:
+
+```bash
+curl -X POST http://localhost:3000/api/memory/flush-tick -H "x-cron-secret: $CRON_SECRET"
+```
+
+Guía completa (tipos de memoria, dedup, inspección, limitaciones) en [docs/features/long-term-memory/README.md](docs/features/long-term-memory/README.md).
+
+---
+
 ## Comandos útiles
 
 | Comando | Descripción |
@@ -269,6 +312,8 @@ Para apagar: `select cron.unschedule('scheduled-tasks-tick');`. Detalles operati
 - [docs/features/scheduled-tasks/plan.md](docs/features/scheduled-tasks/plan.md) — plan de tareas programadas (decisiones, schema, trade-offs).
 - [docs/features/scheduled-tasks/README.md](docs/features/scheduled-tasks/README.md) — guía de uso, setup de pg_cron y operación de tareas programadas.
 - [docs/features/compaction/plan.md](docs/features/compaction/plan.md) — plan de la memoria a corto plazo del agente (compaction_node, microcompact + LLM compaction, circuit breaker).
+- [docs/features/long-term-memory/plan.md](docs/features/long-term-memory/plan.md) — plan de la memoria a largo plazo (flush, injection, pgvector, dedup, cierre de sesión).
+- [docs/features/long-term-memory/README.md](docs/features/long-term-memory/README.md) — guía de uso, setup del flush por inactividad y operación de la memoria a largo plazo.
 - [docs/features/password-recovery/brief.md](docs/features/password-recovery/brief.md) — brief del flujo de recuperación de contraseña.
 - [docs/features/password-recovery/plan.md](docs/features/password-recovery/plan.md) — plan as-built del flujo de recuperación (pantallas, middleware whitelist, esquema de contraseña, toggle de visibilidad, requisitos Supabase).
 - [CHANGELOG.md](CHANGELOG.md) — historial de cambios.
