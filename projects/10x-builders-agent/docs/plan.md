@@ -103,3 +103,15 @@ Brief y plan detallado en [features/google-sheets/](features/google-sheets/). Is
 - [x] `summariseToolCall` con summaries por tool (alias `id` truncado + rango + dimensiones)
 - [x] `TOOL_IDS` extendido en Settings UI
 - [x] Documentación: Paso 9 del README renombrado a "Integraciones de Google" con sub-secciones Calendar/Sheets
+
+### Fase 10: Referencias de hojas (Sheet References) ✅
+
+Brief y plan detallado en [features/sheet-references/](features/sheet-references/).
+
+- [x] Tabla `user_sheets` (migración `00008`, RLS por usuario, `unique(user_id, alias)`)
+- [x] Tipo `UserSheet` + queries `listUserSheets`/`upsertUserSheet`/`deleteUserSheet` (alias case-insensitive, upsert idempotente)
+- [x] Resolución por inyección de contexto (Opción A): bloque `[HOJAS DEL USUARIO]` en `loadAgentContext` (web/Telegram/scheduled)
+- [x] Tools: `gsheets_save_reference` (medium), `gsheets_list_references` (low), `gsheets_delete_reference` (medium)
+- [x] Auto-registro: parámetro opcional `register_as` en `gsheets_create_spreadsheet`
+- [x] `TOOL_IDS` extendido en Settings UI
+- [x] Documentación: sub-sección "Referencias de hojas" en el README, CHANGELOG

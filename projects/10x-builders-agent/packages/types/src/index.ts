@@ -64,6 +64,17 @@ export interface UserToolSetting {
   config_json: Record<string, unknown>;
 }
 
+export interface UserSheet {
+  id: string;
+  user_id: string;
+  alias: string;
+  spreadsheet_id: string;
+  default_tab: string | null;
+  description: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface AgentSession {
   id: string;
   user_id: string;

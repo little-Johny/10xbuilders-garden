@@ -182,7 +182,7 @@ Listar, crear, modificar y eliminar eventos (incluyendo series recurrentes). Dis
 
 ### Google Sheets
 
-Leer, agregar filas, sobrescribir rangos, listar pestañas y crear spreadsheets nuevos. El usuario siempre debe proveer el `spreadsheetId` (el agente no lo inventa ni lo busca por nombre); para flujos recurrentes, ver issue #10 (sheet bindings).
+Leer, agregar filas, sobrescribir rangos, listar pestañas y crear spreadsheets nuevos. El usuario provee el `spreadsheetId` (el agente no lo inventa ni lo busca por nombre), salvo que la hoja esté **registrada** por alias (ver "Referencias de hojas" abajo).
 
 | Tool | Operación | Riesgo | Ejemplo de prompt |
 |------|-----------|--------|-------------------|
@@ -190,9 +190,21 @@ Leer, agregar filas, sobrescribir rangos, listar pestañas y crear spreadsheets 
 | `gsheets_read_range` | Lee un rango A1 | bajo | *"Leeme `Gastos!A1:D20` del spreadsheet `1abc…xyz`"* |
 | `gsheets_append_row` | Agrega una fila al final | medio | *"En el spreadsheet `1abc…xyz`, agregá una fila en `Gastos!A:D` con fecha de hoy, 'Café', 'Comida', 4.50"* |
 | `gsheets_update_range` | Sobrescribe un rango | medio | *"Cambiá `Diario!E5` del spreadsheet `1abc…xyz` a 22.5"* |
-| `gsheets_create_spreadsheet` | Crea un spreadsheet nuevo | medio | *"Creame un spreadsheet llamado 'Lecturas 2026' con pestañas 'Libros' y 'Artículos'"* |
+| `gsheets_create_spreadsheet` | Crea un spreadsheet nuevo (opcional `register_as`) | medio | *"Creame un spreadsheet 'Lecturas 2026' con pestañas 'Libros' y 'Artículos' y guardalo como 'lecturas'"* |
 
 `value_input_option` default `USER_ENTERED` (interpreta strings con `=` como fórmulas y formatea fechas/números); pasá `RAW` para guardar literal. Las 3 tools de escritura disparan confirmación HITL. Brief y plan en [docs/features/google-sheets/](docs/features/google-sheets/).
+
+#### Referencias de hojas (registrar por alias)
+
+Para no pegar el `spreadsheetId` en cada conversación, el usuario puede **registrar** una hoja bajo un alias legible; el agente la resuelve por nombre/intención en cualquier conversación (la lista se inyecta en el contexto del agente cada turno).
+
+| Tool | Operación | Riesgo | Ejemplo de prompt |
+|------|-----------|--------|-------------------|
+| `gsheets_save_reference` | Registra/actualiza una hoja por alias | medio | *"Guardá esta hoja como 'gym': `https://docs.google.com/spreadsheets/d/1abc…xyz/edit`"* |
+| `gsheets_list_references` | Lista las hojas registradas | bajo | *"¿Qué hojas tengo registradas?"* |
+| `gsheets_delete_reference` | Elimina una referencia (no borra el archivo) | medio | *"Borrá la referencia 'gym'"* |
+
+Una vez registrada: *"Leé mi hoja de gym"* o *"Anotá una fila en gastos"* funcionan sin pegar el id. El alias es case-insensitive y re-guardarlo lo sobrescribe. Brief y plan en [docs/features/sheet-references/](docs/features/sheet-references/).
 
 ---
 

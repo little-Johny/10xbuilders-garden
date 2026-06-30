@@ -292,7 +292,7 @@ export const TOOL_CATALOG: ToolDefinition[] = [
     id: "gsheets_create_spreadsheet",
     name: "gsheets_create_spreadsheet",
     description:
-      "Crea un spreadsheet nuevo en el Drive del usuario con el título dado y, opcionalmente, una lista de pestañas iniciales. Devuelve el spreadsheetId, la URL y los sheetId internos. Requiere confirmación del usuario.",
+      "Crea un spreadsheet nuevo en el Drive del usuario con el título dado y, opcionalmente, una lista de pestañas iniciales. Devuelve el spreadsheetId, la URL y los sheetId internos. Si se indica register_as, además registra la hoja con ese alias para poder referenciarla luego por nombre (equivale a llamar gsheets_save_reference). Requiere confirmación del usuario.",
     risk: "medium",
     requires_integration: "google",
     parameters_schema: {
@@ -308,8 +308,67 @@ export const TOOL_CATALOG: ToolDefinition[] = [
             required: ["title"],
           },
         },
+        register_as: {
+          type: "string",
+          description:
+            "Opcional. Alias con el que registrar la hoja recién creada para referenciarla luego por nombre (ej. 'gym'). Si se omite, la hoja se crea pero no se registra.",
+        },
       },
       required: ["title"],
+    },
+  },
+  {
+    id: "gsheets_save_reference",
+    name: "gsheets_save_reference",
+    description:
+      "Registra (o actualiza) una hoja de Google Sheets del usuario bajo un alias legible, para poder referenciarla luego por nombre sin pegar el spreadsheet_id. El alias es case-insensitive; si ya existe, se sobrescribe. Útil cuando el usuario dice 'guardá esta hoja como X'. Requiere confirmación del usuario.",
+    risk: "medium",
+    parameters_schema: {
+      type: "object",
+      properties: {
+        alias: {
+          type: "string",
+          description: "Nombre corto por el que el usuario llamará a la hoja (ej. 'gym', 'gastos').",
+        },
+        spreadsheet_id: {
+          type: "string",
+          description: "ID del spreadsheet (la cadena base64-like de la URL).",
+        },
+        default_tab: {
+          type: "string",
+          description: "Opcional. Pestaña por defecto a usar cuando se opere sobre esta hoja.",
+        },
+        description: {
+          type: "string",
+          description: "Opcional. Para qué sirve la hoja; ayuda a decidir cuándo usarla.",
+        },
+      },
+      required: ["alias", "spreadsheet_id"],
+    },
+  },
+  {
+    id: "gsheets_list_references",
+    name: "gsheets_list_references",
+    description:
+      "Lista las hojas de Google Sheets que el usuario tiene registradas (alias, spreadsheet_id, pestaña por defecto y descripción). No requiere confirmación.",
+    risk: "low",
+    parameters_schema: {
+      type: "object",
+      properties: {},
+    },
+  },
+  {
+    id: "gsheets_delete_reference",
+    name: "gsheets_delete_reference",
+    description:
+      "Elimina una referencia de hoja registrada por su alias (case-insensitive). No borra el spreadsheet en Google, solo la referencia local. Requiere confirmación del usuario.",
+    risk: "medium",
+    parameters_schema: {
+      type: "object",
+      properties: {
+        alias: { type: "string", description: "Alias de la hoja a eliminar." },
+      },
+      required: ["alias"],
     },
   },
   {

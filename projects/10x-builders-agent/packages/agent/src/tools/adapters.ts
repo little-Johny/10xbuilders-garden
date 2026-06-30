@@ -14,11 +14,14 @@ import {
   createScheduledTask,
   createToolCall,
   deleteScheduledTask,
+  deleteUserSheet,
   getProfile,
   getScheduledTask,
   listScheduledTasks,
+  listUserSheets,
   setScheduledTaskEnabled,
   updateToolCallStatus,
+  upsertUserSheet,
 } from "@agents/db";
 import { evaluateCron } from "./cron-utils";
 import type { NotificationChannel } from "@agents/types";
@@ -40,6 +43,7 @@ import {
 } from "../integrations/google-calendar";
 import {
   appendRow,
+  assertSpreadsheetId,
   type CellRow,
   createSpreadsheet,
   listSheets,
@@ -245,11 +249,28 @@ export async function summariseToolCall(
   if (toolName === "gsheets_create_spreadsheet") {
     const title = String(args.title ?? "(sin título)");
     const sheets = Array.isArray(args.sheets) ? (args.sheets as { title?: string }[]) : [];
+    const registerAs =
+      typeof args.register_as === "string" && args.register_as.trim().length > 0
+        ? ` y registrarlo como «${args.register_as.trim().toLowerCase()}»`
+        : "";
     if (sheets.length === 0) {
-      return `Crear spreadsheet «${title}» con la pestaña por defecto.`;
+      return `Crear spreadsheet «${title}» con la pestaña por defecto${registerAs}.`;
     }
     const titles = sheets.map((s) => s?.title ?? "(sin nombre)").join(", ");
-    return `Crear spreadsheet «${title}» con ${sheets.length} pestaña${sheets.length === 1 ? "" : "s"}: ${titles}.`;
+    return `Crear spreadsheet «${title}» con ${sheets.length} pestaña${sheets.length === 1 ? "" : "s"}: ${titles}${registerAs}.`;
+  }
+
+  if (toolName === "gsheets_save_reference") {
+    const alias = String(args.alias ?? "").trim().toLowerCase();
+    const id = String(args.spreadsheet_id ?? "");
+    const idShort = id.length > 8 ? `${id.slice(0, 8)}…` : id;
+    const tab = args.default_tab ? ` (pestaña «${String(args.default_tab)}»)` : "";
+    return `Guardar hoja «${alias}» → \`${idShort}\`${tab}.`;
+  }
+
+  if (toolName === "gsheets_delete_reference") {
+    const alias = String(args.alias ?? "").trim().toLowerCase();
+    return `Eliminar la referencia de hoja «${alias}».`;
   }
 
   if (toolName === "bash") {
@@ -881,18 +902,136 @@ export function buildLangChainTools(ctx: ToolContext) {
             title: input.title,
             sheets: input.sheets ?? undefined,
           });
+          // Auto-registro opcional: si viene register_as, guardamos la
+          // referencia con el id recién creado. NO revertimos la creación si el
+          // registro falla; devolvemos el id + el error para que el usuario lo
+          // guarde manualmente con gsheets_save_reference.
+          const registerAs = input.register_as?.trim();
+          if (registerAs) {
+            try {
+              await upsertUserSheet(ctx.db, ctx.userId, {
+                alias: registerAs,
+                spreadsheetId: result.spreadsheetId,
+                defaultTab: result.sheets[0]?.title ?? null,
+              });
+              return JSON.stringify({ ...result, registeredAs: registerAs.toLowerCase() });
+            } catch (e) {
+              return JSON.stringify({
+                ...result,
+                registeredAs: null,
+                registerError: e instanceof Error ? e.message : String(e),
+              });
+            }
+          }
           return JSON.stringify(result);
         },
         {
           name: "gsheets_create_spreadsheet",
           description:
-            "Crea un spreadsheet nuevo en el Drive del usuario con el título dado y, opcionalmente, una lista de pestañas iniciales. Requiere confirmación del usuario (gestionada por el grafo).",
+            "Crea un spreadsheet nuevo en el Drive del usuario con el título dado y, opcionalmente, una lista de pestañas iniciales. Si se indica register_as, registra la hoja con ese alias. Requiere confirmación del usuario (gestionada por el grafo).",
           schema: z.object({
             title: z.string().min(1),
             sheets: z
               .array(z.object({ title: z.string().min(1) }))
               .nullable()
               .optional(),
+            register_as: z.string().min(1).nullable().optional(),
+          }),
+        },
+      ),
+    );
+  }
+
+  // -------------------------------------------------------------------------
+  // Sheet references (registro local de hojas por alias)
+  // -------------------------------------------------------------------------
+
+  if (isToolAvailable("gsheets_save_reference", ctx)) {
+    tools.push(
+      tool(
+        async (input) => {
+          assertSpreadsheetId(input.spreadsheet_id);
+          const saved = await upsertUserSheet(ctx.db, ctx.userId, {
+            alias: input.alias,
+            spreadsheetId: input.spreadsheet_id,
+            defaultTab: input.default_tab ?? null,
+            description: input.description ?? null,
+          });
+          return JSON.stringify({
+            alias: saved.alias,
+            spreadsheet_id: saved.spreadsheet_id,
+            default_tab: saved.default_tab,
+            description: saved.description,
+          });
+        },
+        {
+          name: "gsheets_save_reference",
+          description:
+            "Registra o actualiza una hoja del usuario bajo un alias legible para referenciarla luego por nombre. El alias es case-insensitive y se sobrescribe si ya existe. Requiere confirmación del usuario (gestionada por el grafo).",
+          schema: z.object({
+            alias: z.string().min(1),
+            spreadsheet_id: z.string().min(1),
+            default_tab: z.string().nullable().optional(),
+            description: z.string().nullable().optional(),
+          }),
+        },
+      ),
+    );
+  }
+
+  if (isToolAvailable("gsheets_list_references", ctx)) {
+    tools.push(
+      tool(
+        async (input) => {
+          const record = await createToolCall(
+            ctx.db,
+            ctx.sessionId,
+            "gsheets_list_references",
+            input as Record<string, unknown>,
+            false,
+          );
+          try {
+            const sheets = await listUserSheets(ctx.db, ctx.userId);
+            const result = sheets.map((s) => ({
+              alias: s.alias,
+              spreadsheet_id: s.spreadsheet_id,
+              default_tab: s.default_tab,
+              description: s.description,
+            }));
+            await updateToolCallStatus(ctx.db, record.id, "executed", {
+              count: result.length,
+            });
+            return JSON.stringify({ sheets: result });
+          } catch (e) {
+            await updateToolCallStatus(ctx.db, record.id, "failed", {
+              error: e instanceof Error ? e.message : String(e),
+            });
+            throw e;
+          }
+        },
+        {
+          name: "gsheets_list_references",
+          description:
+            "Lista las hojas que el usuario tiene registradas (alias, spreadsheet_id, pestaña por defecto y descripción).",
+          schema: z.object({}),
+        },
+      ),
+    );
+  }
+
+  if (isToolAvailable("gsheets_delete_reference", ctx)) {
+    tools.push(
+      tool(
+        async (input) => {
+          const result = await deleteUserSheet(ctx.db, ctx.userId, input.alias);
+          return JSON.stringify(result);
+        },
+        {
+          name: "gsheets_delete_reference",
+          description:
+            "Elimina una referencia de hoja registrada por su alias (case-insensitive). No borra el spreadsheet en Google. Requiere confirmación del usuario (gestionada por el grafo).",
+          schema: z.object({
+            alias: z.string().min(1),
           }),
         },
       ),
