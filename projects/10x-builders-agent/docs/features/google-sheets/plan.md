@@ -136,6 +136,16 @@ Descripciones en español claras: incluir el aviso de que `USER_ENTERED` interpr
 
 ### Fase 7: Documentación ⬜
 
+- [ ] `README.md` principal — actualizar el actual *"Paso 9 — Google Calendar (opcional)"* (`README.md:157-170`) para que cubra la suite Google completa:
+  - Renombrar a *"Paso 9 — Integraciones de Google (opcional)"*.
+  - Mantener la sub-sección de Calendar tal cual.
+  - Agregar sub-sección *"Google Sheets"* con los pasos en Google Cloud Console:
+    1. Habilitar **Google Sheets API** en el proyecto (link a `console.cloud.google.com/apis/library/sheets.googleapis.com`).
+    2. (Opcional preventivo) habilitar también **Google Drive API** y **Gmail API** para tools futuras; habilitarlas no otorga permisos por sí solo.
+    3. En *OAuth consent screen → Scopes*, agregar `.../auth/spreadsheets` (clasificado como **sensitive** por Google).
+    4. Confirmar que la cuenta de prueba sigue en *Test users* si el consent screen está en modo Testing.
+    5. **Si ya tenías Google conectado por Calendar**: desconectar en *Ajustes → Google → Desconectar* y volver a conectar para autorizar el scope nuevo (el `prompt=consent` ya fuerza el re-consentimiento).
+  - Mencionar el scope completo solicitado tras este PR: `openid email .../auth/calendar.events .../auth/spreadsheets`.
 - [ ] `packages/agent/README.md`: nueva sección "Google Sheets tools" listando las 5 tools con un ejemplo de prompt cada una. Si no existe README de `packages/agent`, agregar la sección al README principal del proyecto.
 - [ ] `CHANGELOG.md`: entrada en `[Unreleased]`:
   - `Added`: 5 tools `gsheets_*`, cliente `integrations/google-sheets.ts`.
@@ -171,7 +181,8 @@ Descripciones en español claras: incluir el aviso de que `USER_ENTERED` interpr
 - `packages/agent/src/tools/catalog.ts` — 5 entradas `gsheets_*`.
 - `packages/agent/src/tools/adapters.ts` — 5 wrappers + ramas en `summariseToolCall`.
 - `apps/web/src/app/settings/settings-form.tsx` — `TOOL_IDS` extendido.
-- `README.md` o `packages/agent/README.md` — documentación de las nuevas tools.
+- `README.md` (raíz del proyecto) — actualizar Paso 9 con la sub-sección de Google Sheets (Cloud Console + scope + reconexión).
+- `packages/agent/README.md` — sección "Google Sheets tools" con las 5 tools y un ejemplo de prompt cada una.
 - `CHANGELOG.md` — entrada en `[Unreleased]`.
 - `docs/plan.md` — referencia a esta fase.
 - `docs/features/google-sheets/brief.md` — header de estado.

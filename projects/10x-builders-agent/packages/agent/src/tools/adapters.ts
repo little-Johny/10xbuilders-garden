@@ -38,6 +38,14 @@ import {
   type Recurrence,
   updateEvent,
 } from "../integrations/google-calendar";
+import {
+  appendRow,
+  type CellRow,
+  createSpreadsheet,
+  listSheets,
+  readRange,
+  updateRange,
+} from "../integrations/google-sheets";
 import { isBashToolAllowed, runBash } from "./bash-exec";
 import { editFileExact, isFileToolsAllowed, readFileSafe, writeFileNew } from "./file-ops";
 
@@ -214,6 +222,34 @@ export async function summariseToolCall(
         ? "Esta acción afectará SOLO a esa ocurrencia."
         : "Esta acción afectará TODA la serie.";
     return `Eliminar evento ${String(args.event_id)}. ${scopeLabel}`;
+  }
+
+  if (toolName === "gsheets_append_row") {
+    const id = String(args.spreadsheet_id ?? "");
+    const idShort = id.length > 8 ? `${id.slice(0, 8)}…` : id;
+    const range = String(args.range ?? "");
+    const values = Array.isArray(args.values) ? (args.values as unknown[]) : [];
+    return `Agregar 1 fila a \`${idShort}!${range}\` (${values.length} celdas).`;
+  }
+
+  if (toolName === "gsheets_update_range") {
+    const id = String(args.spreadsheet_id ?? "");
+    const idShort = id.length > 8 ? `${id.slice(0, 8)}…` : id;
+    const range = String(args.range ?? "");
+    const values = Array.isArray(args.values) ? (args.values as unknown[][]) : [];
+    const rows = values.length;
+    const cols = rows > 0 && Array.isArray(values[0]) ? values[0].length : 0;
+    return `Sobrescribir \`${idShort}!${range}\` con ${rows} filas × ${cols} cols (${rows * cols} celdas).`;
+  }
+
+  if (toolName === "gsheets_create_spreadsheet") {
+    const title = String(args.title ?? "(sin título)");
+    const sheets = Array.isArray(args.sheets) ? (args.sheets as { title?: string }[]) : [];
+    if (sheets.length === 0) {
+      return `Crear spreadsheet «${title}» con la pestaña por defecto.`;
+    }
+    const titles = sheets.map((s) => s?.title ?? "(sin nombre)").join(", ");
+    return `Crear spreadsheet «${title}» con ${sheets.length} pestaña${sheets.length === 1 ? "" : "s"}: ${titles}.`;
   }
 
   if (toolName === "bash") {
@@ -685,6 +721,178 @@ export function buildLangChainTools(ctx: ToolContext) {
           schema: z.object({
             event_id: z.string(),
             scope: z.enum(["instance", "series"]),
+          }),
+        },
+      ),
+    );
+  }
+
+  // -------------------------------------------------------------------------
+  // Google Sheets
+  // -------------------------------------------------------------------------
+
+  const cellValueSchema = z.union([z.string(), z.number(), z.boolean(), z.null()]);
+
+  if (isToolAvailable("gsheets_list_sheets", ctx)) {
+    tools.push(
+      tool(
+        async (input) => {
+          const token = requireGoogleToken(ctx);
+          const record = await createToolCall(
+            ctx.db,
+            ctx.sessionId,
+            "gsheets_list_sheets",
+            input as Record<string, unknown>,
+            false,
+          );
+          try {
+            const result = await listSheets(token, { spreadsheetId: input.spreadsheet_id });
+            await updateToolCallStatus(ctx.db, record.id, "executed", {
+              count: result.sheets.length,
+            });
+            return JSON.stringify(result);
+          } catch (e) {
+            await updateToolCallStatus(ctx.db, record.id, "failed", {
+              error: e instanceof Error ? e.message : String(e),
+            });
+            throw e;
+          }
+        },
+        {
+          name: "gsheets_list_sheets",
+          description:
+            "Lista las pestañas de un spreadsheet por su id. Devuelve title, sheetId interno y dimensiones de cada pestaña.",
+          schema: z.object({
+            spreadsheet_id: z.string().min(1),
+          }),
+        },
+      ),
+    );
+  }
+
+  if (isToolAvailable("gsheets_read_range", ctx)) {
+    tools.push(
+      tool(
+        async (input) => {
+          const token = requireGoogleToken(ctx);
+          const record = await createToolCall(
+            ctx.db,
+            ctx.sessionId,
+            "gsheets_read_range",
+            input as Record<string, unknown>,
+            false,
+          );
+          try {
+            const result = await readRange(token, {
+              spreadsheetId: input.spreadsheet_id,
+              range: input.range,
+              valueRenderOption: input.value_render_option ?? undefined,
+            });
+            await updateToolCallStatus(ctx.db, record.id, "executed", {
+              rows: result.values.length,
+            });
+            return JSON.stringify(result);
+          } catch (e) {
+            await updateToolCallStatus(ctx.db, record.id, "failed", {
+              error: e instanceof Error ? e.message : String(e),
+            });
+            throw e;
+          }
+        },
+        {
+          name: "gsheets_read_range",
+          description:
+            "Lee un rango A1 (ej. 'Hoja 1!A1:C20') y devuelve filas como arreglos. Usa value_render_option para FORMATTED_VALUE (default), UNFORMATTED_VALUE o FORMULA.",
+          schema: z.object({
+            spreadsheet_id: z.string().min(1),
+            range: z.string().min(1),
+            value_render_option: z
+              .enum(["FORMATTED_VALUE", "UNFORMATTED_VALUE", "FORMULA"])
+              .nullable()
+              .optional(),
+          }),
+        },
+      ),
+    );
+  }
+
+  if (isToolAvailable("gsheets_append_row", ctx)) {
+    tools.push(
+      tool(
+        async (input) => {
+          const token = requireGoogleToken(ctx);
+          const result = await appendRow(token, {
+            spreadsheetId: input.spreadsheet_id,
+            range: input.range,
+            values: input.values as CellRow,
+            valueInputOption: input.value_input_option ?? undefined,
+          });
+          return JSON.stringify(result);
+        },
+        {
+          name: "gsheets_append_row",
+          description:
+            "Añade una fila al final del rango. Inserta sin sobrescribir. value_input_option default 'USER_ENTERED' interpreta strings con '=' como fórmulas. Requiere confirmación del usuario (gestionada por el grafo).",
+          schema: z.object({
+            spreadsheet_id: z.string().min(1),
+            range: z.string().min(1),
+            values: z.array(cellValueSchema),
+            value_input_option: z.enum(["RAW", "USER_ENTERED"]).nullable().optional(),
+          }),
+        },
+      ),
+    );
+  }
+
+  if (isToolAvailable("gsheets_update_range", ctx)) {
+    tools.push(
+      tool(
+        async (input) => {
+          const token = requireGoogleToken(ctx);
+          const result = await updateRange(token, {
+            spreadsheetId: input.spreadsheet_id,
+            range: input.range,
+            values: input.values as CellRow[],
+            valueInputOption: input.value_input_option ?? undefined,
+          });
+          return JSON.stringify(result);
+        },
+        {
+          name: "gsheets_update_range",
+          description:
+            "Sobrescribe un rango A1 con una matriz 2D de valores. Tope 10.000 celdas. value_input_option default 'USER_ENTERED'. Requiere confirmación del usuario (gestionada por el grafo).",
+          schema: z.object({
+            spreadsheet_id: z.string().min(1),
+            range: z.string().min(1),
+            values: z.array(z.array(cellValueSchema)),
+            value_input_option: z.enum(["RAW", "USER_ENTERED"]).nullable().optional(),
+          }),
+        },
+      ),
+    );
+  }
+
+  if (isToolAvailable("gsheets_create_spreadsheet", ctx)) {
+    tools.push(
+      tool(
+        async (input) => {
+          const token = requireGoogleToken(ctx);
+          const result = await createSpreadsheet(token, {
+            title: input.title,
+            sheets: input.sheets ?? undefined,
+          });
+          return JSON.stringify(result);
+        },
+        {
+          name: "gsheets_create_spreadsheet",
+          description:
+            "Crea un spreadsheet nuevo en el Drive del usuario con el título dado y, opcionalmente, una lista de pestañas iniciales. Requiere confirmación del usuario (gestionada por el grafo).",
+          schema: z.object({
+            title: z.string().min(1),
+            sheets: z
+              .array(z.object({ title: z.string().min(1) }))
+              .nullable()
+              .optional(),
           }),
         },
       ),

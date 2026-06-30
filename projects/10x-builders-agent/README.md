@@ -154,22 +154,45 @@ Para detalles sobre el diseño de la integración (cifrado de tokens, flujo de c
 
 ---
 
-## Paso 9 — Google Calendar (opcional)
+## Paso 9 — Integraciones de Google (opcional)
 
-Para que el agente opere sobre Google Calendar (listar, crear, modificar y eliminar eventos, incluyendo series recurrentes), el usuario debe conectar su cuenta de Google desde Ajustes.
+Las tools de Google (Calendar, Sheets, y futuras Drive/Gmail) comparten **un solo OAuth Client** y **una sola conexión** del usuario. Al agregar una integración nueva basta con habilitar su API en Cloud Console y volver a conectar Google desde Ajustes.
 
 ### Configurar el OAuth Client en Google Cloud Console
 
 1. Ve a [Google Cloud Console → APIs & Services → Credentials](https://console.cloud.google.com/apis/credentials).
-2. Habilita la **Google Calendar API** en el proyecto si aún no lo está.
+2. Habilita las APIs que vayas a usar (puedes habilitarlas todas a la vez; hacerlo no otorga ningún permiso hasta que el scope correspondiente se solicite en el consent):
+   - [Google Calendar API](https://console.cloud.google.com/apis/library/calendar-json.googleapis.com)
+   - [Google Sheets API](https://console.cloud.google.com/apis/library/sheets.googleapis.com)
+   - (Opcional, futuro) Google Drive API, Gmail API.
 3. **Create Credentials → OAuth client ID → Web application**.
 4. **Authorized redirect URIs**: `http://localhost:3000/api/auth/google/callback`.
-5. Copia el **Client ID** → `GOOGLE_CLIENT_ID` y el **Client Secret** → `GOOGLE_CLIENT_SECRET` en `apps/web/.env.local`.
-6. En la web: **Ajustes → Google → Conectar Google**.
+5. En **OAuth consent screen → Scopes**, agrega los scopes de las APIs habilitadas:
+   - `.../auth/calendar.events`
+   - `.../auth/spreadsheets` (clasificado como **sensitive** por Google)
+6. Si el consent screen está en modo **Testing**, confirma que tu cuenta está en *Test users*.
+7. Copia el **Client ID** → `GOOGLE_CLIENT_ID` y el **Client Secret** → `GOOGLE_CLIENT_SECRET` en `apps/web/.env.local`.
+8. En la web: **Ajustes → Google → Conectar Google** (si ya estaba conectado por Calendar y agregás Sheets, **desconectá y reconectá** para que el grant cubra el scope nuevo).
 
-El agente pide los scopes `openid email https://www.googleapis.com/auth/calendar.events`. El access token se renueva automáticamente con el refresh token cuando expira (~1h).
+Scopes solicitados por el agente hoy: `openid email .../auth/calendar.events .../auth/spreadsheets`. El access token se renueva automáticamente con el refresh token cuando expira (~1h).
 
-Para detalles sobre el diseño (recurrencias, scope instance/series, refresh flow), ver [docs/features/calendar/README.md](docs/features/calendar/README.md).
+### Google Calendar
+
+Listar, crear, modificar y eliminar eventos (incluyendo series recurrentes). Diseño completo en [docs/features/calendar/README.md](docs/features/calendar/README.md).
+
+### Google Sheets
+
+Leer, agregar filas, sobrescribir rangos, listar pestañas y crear spreadsheets nuevos. El usuario siempre debe proveer el `spreadsheetId` (el agente no lo inventa ni lo busca por nombre); para flujos recurrentes, ver issue #10 (sheet bindings).
+
+| Tool | Operación | Riesgo | Ejemplo de prompt |
+|------|-----------|--------|-------------------|
+| `gsheets_list_sheets` | Lista las pestañas de un spreadsheet | bajo | *"En el spreadsheet `1abc…xyz` qué pestañas tiene?"* |
+| `gsheets_read_range` | Lee un rango A1 | bajo | *"Leeme `Gastos!A1:D20` del spreadsheet `1abc…xyz`"* |
+| `gsheets_append_row` | Agrega una fila al final | medio | *"En el spreadsheet `1abc…xyz`, agregá una fila en `Gastos!A:D` con fecha de hoy, 'Café', 'Comida', 4.50"* |
+| `gsheets_update_range` | Sobrescribe un rango | medio | *"Cambiá `Diario!E5` del spreadsheet `1abc…xyz` a 22.5"* |
+| `gsheets_create_spreadsheet` | Crea un spreadsheet nuevo | medio | *"Creame un spreadsheet llamado 'Lecturas 2026' con pestañas 'Libros' y 'Artículos'"* |
+
+`value_input_option` default `USER_ENTERED` (interpreta strings con `=` como fórmulas y formatea fechas/números); pasá `RAW` para guardar literal. Las 3 tools de escritura disparan confirmación HITL. Brief y plan en [docs/features/google-sheets/](docs/features/google-sheets/).
 
 ---
 
