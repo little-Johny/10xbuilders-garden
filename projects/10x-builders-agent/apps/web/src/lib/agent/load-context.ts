@@ -1,9 +1,9 @@
 import type { DbClient } from "@agents/db";
-import { getProfile } from "@agents/db";
+import { getProfile, listUserSheets } from "@agents/db";
 import type {
   IntegrationsContext,
 } from "@agents/agent";
-import type { UserIntegration, UserToolSetting } from "@agents/types";
+import type { UserIntegration, UserSheet, UserToolSetting } from "@agents/types";
 import { loadIntegrationsContext } from "./integrations-context";
 
 const DEFAULT_SYSTEM_PROMPT = "Eres un asistente útil que ayuda al usuario.";
@@ -44,18 +44,23 @@ export async function loadAgentContext(
     .eq("user_id", userId)
     .eq("status", "active");
   const integrationsContextPromise = loadIntegrationsContext(db, userId);
+  const userSheetsPromise = listUserSheets(db, userId).catch(
+    () => [] as UserSheet[],
+  );
 
-  const [profile, toolSettingsRes, integrationsRes, integrationsContext] =
+  const [profile, toolSettingsRes, integrationsRes, integrationsContext, userSheets] =
     await Promise.all([
       profilePromise,
       toolSettingsPromise,
       integrationsPromise,
       integrationsContextPromise,
+      userSheetsPromise,
     ]);
 
   const timezone = profile?.timezone || "UTC";
   const userPrompt = profile?.agent_system_prompt || DEFAULT_SYSTEM_PROMPT;
-  const systemPrompt = buildSystemPrompt(userPrompt, now, timezone);
+  const systemPrompt =
+    buildSystemPrompt(userPrompt, now, timezone) + buildSheetsBlock(userSheets);
 
   const toolSettings: UserToolSetting[] = (
     (toolSettingsRes.data ?? []) as Record<string, unknown>[]
@@ -104,6 +109,29 @@ function buildSystemPrompt(userPrompt: string, now: Date, timezone: string): str
     "Usa este contexto para resolver expresiones relativas («mañana», «el viernes», «cada lunes a las 9am») cuando programes tareas o crees eventos. Las cron_expression se interpretan en esta zona horaria salvo que el usuario indique otra.",
   ].join("\n");
   return `${preamble}\n\n${userPrompt}`;
+}
+
+/**
+ * Construye el bloque `[HOJAS DEL USUARIO]` que se concatena al system prompt.
+ * Lista las hojas de Google Sheets que el usuario registró (alias → id +
+ * pestaña + uso) para que el modelo resuelva referencias por nombre/intención
+ * sin que el usuario pegue el spreadsheet_id en cada conversación. Resolución
+ * determinista (Opción A): NO usa embeddings; el matching lo hace el LLM.
+ * Devuelve cadena vacía si el usuario no tiene hojas registradas.
+ */
+function buildSheetsBlock(sheets: UserSheet[]): string {
+  if (sheets.length === 0) return "";
+  const lines = sheets.map((s) => {
+    const tab = s.default_tab ? `, pestaña por defecto "${s.default_tab}"` : "";
+    const use = s.description ? `. Uso: ${s.description}` : "";
+    return `- "${s.alias}" → spreadsheet ${s.spreadsheet_id}${tab}${use}`;
+  });
+  return [
+    "\n\n[HOJAS DEL USUARIO]",
+    "Hojas de Google Sheets que el usuario registró. Para operar por nombre o intención usá el spreadsheet_id correspondiente (no inventes IDs ni busques fuera de esta lista):",
+    ...lines,
+    "[/HOJAS DEL USUARIO]",
+  ].join("\n");
 }
 
 /** Devuelve la fecha en formato ISO8601 con offset de la TZ pedida. */
