@@ -1,5 +1,7 @@
 # Technical Brief — Implementación de Google Sheets tool
 
+> **Estado: implementado.** Las decisiones aquí descritas se reflejan en el código actual; el plan operativo cerrado vive en [`plan.md`](plan.md).
+
 ## 0. Snapshot
 
 | Campo | Valor |
@@ -7,7 +9,7 @@
 | Fecha | 22-05-2026 |
 | Tipo | `Integración` |
 | Stack principal | `LangGraph`, `Google Sheets API v4` |
-| Estado | `Draft` |
+| Estado | `Implementado` |
 
 ---
 
@@ -15,7 +17,7 @@
 
 ### ¿Qué existe hoy?
 
-Tenemos un agente construido con LangGraph (`packages/agent/src/graph.ts`) con los nodos `_start_`, `_compaction_`, `_agent_`, `_tool_` y `_end_`. El catálogo de tools (`packages/agent/src/tools/catalog.ts`) ya incluye integraciones con GitHub y Google Calendar; ambas usan el mismo patrón: un módulo en `packages/agent/src/integrations/` que recibe el `accessToken` del usuario y golpea la API REST directamente, con manejo de errores que lanza con `status + path + body truncado`.
+Tenemos un agente construido con LangGraph (`packages/agent/src/graph.ts`) con el flujo `__start__` → `memory_injection` → `compaction` → `agent` → (`tools` → `compaction` | `__end__`). Es decir, cuatro nodos propios: `memory_injection` (inyecta recuerdos de largo plazo desde pgvector), `compaction` (memoria corta / resumen), `agent` (LLM + decisión de tool-calls) y `tools` (ejecutor con HITL). El catálogo de tools (`packages/agent/src/tools/catalog.ts`) ya incluye integraciones con GitHub y Google Calendar; ambas usan el mismo patrón: un módulo en `packages/agent/src/integrations/` que recibe el `accessToken` del usuario y golpea la API REST directamente, con manejo de errores que lanza con `status + path + body truncado`.
 
 La integración con Google ya está cableada para OAuth (Calendar usa `requires_integration: "google"` con scope de calendar). El usuario ya autoriza Google al conectar Calendar, así que extenderemos esa autorización para incluir Sheets.
 
@@ -25,7 +27,7 @@ Crear una nueva integración para consultar, modificar y crear archivos de Googl
 
 ### Usuarios / Consumidores
 
-- **Usuario final del agente** (interfaz web y Telegram). Las tools se invocan desde el LLM dentro del nodo `_agent_`, no por API directa.
+- **Usuario final del agente** (interfaz web y Telegram). Las tools se invocan desde el LLM dentro del nodo `agent`, no por API directa.
 - La integración la consume **el propio agente**, no servicios externos.
 
 ---
@@ -77,20 +79,20 @@ Sin librerías cliente extra de Google: se usa `fetch` directo, igual que `googl
 ```
 [Usuario] (web / telegram)
     ↓
-[LangGraph: _start_ → _compaction_ → _agent_]
+[LangGraph: __start__ → memory_injection → compaction → agent]
     ↓ tool_call: gsheets_*
-[Nodo _tool_]
+[Nodo tools (toolExecutorNode, incluye HITL para medium/high)]
     ↓ resuelve adapter
 [tools/adapters.ts → integrations/google-sheets.ts]
     ↓ fetch(Authorization: Bearer <access_token>)
 [Google Sheets API v4 — https://sheets.googleapis.com/v4]
     ↓ JSON
-[Resultado serializado → _agent_]
+[Resultado serializado → agent]
     ↓
 [Respuesta al usuario]
 ```
 
-El `access_token` se obtiene del registro de integración del usuario (mismo path que ya usa Google Calendar). Si la integración no está conectada, el nodo `_tool_` debe responder con el error existente de "integración no configurada" antes de llegar a la API.
+El `access_token` se obtiene del registro de integración del usuario (mismo path que ya usa Google Calendar). Si la integración no está conectada, el nodo `tools` debe responder con el error existente de "integración no configurada" antes de llegar a la API.
 
 ### 3.3 Contratos de datos
 
@@ -131,7 +133,7 @@ listSheets(accessToken, {
 }) → { sheets: { title: string; sheetId: number; gridProperties?: { rowCount: number; columnCount: number } }[] }
 ```
 
-Errores: todas las funciones lanzan `Error` con mensaje `"Google Sheets error <status> on <method> <path>: <body truncado a 200 chars>"`, igual que `google-calendar.ts`. El nodo `_tool_` ya tiene el manejo genérico para convertirlo en respuesta al LLM.
+Errores: todas las funciones lanzan `Error` con mensaje `"Google Sheets error <status> on <method> <path>: <body truncado a 200 chars>"`, igual que `google-calendar.ts`. El nodo `tools` ya tiene el manejo genérico para convertirlo en respuesta al LLM.
 
 ---
 
@@ -140,7 +142,7 @@ Errores: todas las funciones lanzan `Error` con mensaje `"Google Sheets error <s
 ### Reglas fijas (no negociables en todos los proyectos)
 
 - TypeScript estricto, sin `any`. Interfaces definidas para request/response.
-- Adapter Pattern: toda llamada a Sheets pasa por `integrations/google-sheets.ts`. El nodo `_tool_` nunca habla directo con la API.
+- Adapter Pattern: toda llamada a Sheets pasa por `integrations/google-sheets.ts`. El nodo `tools` nunca habla directo con la API.
 - Sin valores hardcodeados: `GOOGLE_SHEETS_API` y scopes en constantes del módulo o en `.env` cuando corresponda.
 - Credenciales (`accessToken`) recibidas por parámetro; nunca se loggean ni se almacenan dentro del módulo de integración.
 - Errores con `status + path + body truncado`, no propagar el body completo (puede contener PII).

@@ -89,3 +89,17 @@ Diseño detallado en [features/calendar/README.md](features/calendar/README.md).
 - [x] Detección de conflictos en las primeras 8 semanas antes de crear una serie
 - [x] `IntegrationsContext.google` con email + zona horaria del perfil del usuario
 - [x] UI de conexión/desconexión en Ajustes con email vinculado y scopes
+
+### Fase 9: Google Sheets ✅
+
+Brief y plan detallado en [features/google-sheets/](features/google-sheets/). Issue #6.
+
+- [x] Spike OAuth: confirmar que basta con `https://www.googleapis.com/auth/spreadsheets` (sin `drive.file`)
+- [x] Cliente REST mínimo `packages/agent/src/integrations/google-sheets.ts` (espejo de `google-calendar.ts`)
+- [x] Validaciones: `assertSpreadsheetId`, `assertA1`, `assertWriteSize` (tope 10.000 celdas), `mapSheetsError` (403 → mensaje accionable de reconexión)
+- [x] Ampliación de `GOOGLE_OAUTH_SCOPES` con `.../auth/spreadsheets` (requiere reconectar Google)
+- [x] Tools: `gsheets_list_sheets`, `gsheets_read_range`, `gsheets_append_row`, `gsheets_update_range`, `gsheets_create_spreadsheet`
+- [x] Wiring en `tools/adapters.ts` con HITL automático para las 3 de escritura (medium)
+- [x] `summariseToolCall` con summaries por tool (alias `id` truncado + rango + dimensiones)
+- [x] `TOOL_IDS` extendido en Settings UI
+- [x] Documentación: Paso 9 del README renombrado a "Integraciones de Google" con sub-secciones Calendar/Sheets

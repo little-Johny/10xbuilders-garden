@@ -192,6 +192,127 @@ export const TOOL_CATALOG: ToolDefinition[] = [
     },
   },
   {
+    id: "gsheets_list_sheets",
+    name: "gsheets_list_sheets",
+    description:
+      "Lista las pestañas (hojas) de un spreadsheet de Google Sheets dado su id. Devuelve título, sheetId interno y dimensiones de cada pestaña. El spreadsheet_id lo debe proveer el usuario (o haber sido devuelto por gsheets_create_spreadsheet); no se busca por nombre.",
+    risk: "low",
+    requires_integration: "google",
+    parameters_schema: {
+      type: "object",
+      properties: {
+        spreadsheet_id: {
+          type: "string",
+          description: "ID del spreadsheet (la cadena base64-like de la URL).",
+        },
+      },
+      required: ["spreadsheet_id"],
+    },
+  },
+  {
+    id: "gsheets_read_range",
+    name: "gsheets_read_range",
+    description:
+      "Lee un rango A1 de un spreadsheet (ej. 'Hoja 1!A1:C20' o 'A:A'). Devuelve filas como arreglos. value_render_option controla cómo se formatean: FORMATTED_VALUE (default) entrega lo que ve el usuario, UNFORMATTED_VALUE da el dato bruto, FORMULA muestra la fórmula original. No requiere confirmación.",
+    risk: "low",
+    requires_integration: "google",
+    parameters_schema: {
+      type: "object",
+      properties: {
+        spreadsheet_id: { type: "string" },
+        range: {
+          type: "string",
+          description: "Rango A1, ej. 'Hoja 1!A1:C20' o 'A1:B10'.",
+        },
+        value_render_option: {
+          type: "string",
+          enum: ["FORMATTED_VALUE", "UNFORMATTED_VALUE", "FORMULA"],
+        },
+      },
+      required: ["spreadsheet_id", "range"],
+    },
+  },
+  {
+    id: "gsheets_append_row",
+    name: "gsheets_append_row",
+    description:
+      "Añade una fila al final de la hoja indicada por el rango (ej. 'Gastos!A:D'). Inserta SIN sobrescribir filas existentes. value_input_option: 'USER_ENTERED' (default) interpreta strings que empiezan con '=' como fórmulas y formatea fechas/números; 'RAW' las guarda literales. Requiere confirmación del usuario.",
+    risk: "medium",
+    requires_integration: "google",
+    parameters_schema: {
+      type: "object",
+      properties: {
+        spreadsheet_id: { type: "string" },
+        range: {
+          type: "string",
+          description: "Rango de la hoja donde agregar, típicamente 'NombreHoja!A:D'.",
+        },
+        values: {
+          type: "array",
+          description: "Arreglo plano con los valores de la fila a agregar.",
+          items: { type: ["string", "number", "boolean", "null"] },
+        },
+        value_input_option: {
+          type: "string",
+          enum: ["RAW", "USER_ENTERED"],
+        },
+      },
+      required: ["spreadsheet_id", "range", "values"],
+    },
+  },
+  {
+    id: "gsheets_update_range",
+    name: "gsheets_update_range",
+    description:
+      "Sobrescribe un rango A1 con los valores dados (matriz filas x columnas). Si el rango es más grande que los valores, las celdas restantes no se tocan. value_input_option: 'USER_ENTERED' (default) interpreta strings que empiezan con '=' como fórmulas; 'RAW' las guarda literales. Tope de seguridad: 10.000 celdas por llamada. Requiere confirmación del usuario.",
+    risk: "medium",
+    requires_integration: "google",
+    parameters_schema: {
+      type: "object",
+      properties: {
+        spreadsheet_id: { type: "string" },
+        range: { type: "string", description: "Rango A1 a sobrescribir." },
+        values: {
+          type: "array",
+          description: "Matriz 2D filas x columnas.",
+          items: {
+            type: "array",
+            items: { type: ["string", "number", "boolean", "null"] },
+          },
+        },
+        value_input_option: {
+          type: "string",
+          enum: ["RAW", "USER_ENTERED"],
+        },
+      },
+      required: ["spreadsheet_id", "range", "values"],
+    },
+  },
+  {
+    id: "gsheets_create_spreadsheet",
+    name: "gsheets_create_spreadsheet",
+    description:
+      "Crea un spreadsheet nuevo en el Drive del usuario con el título dado y, opcionalmente, una lista de pestañas iniciales. Devuelve el spreadsheetId, la URL y los sheetId internos. Requiere confirmación del usuario.",
+    risk: "medium",
+    requires_integration: "google",
+    parameters_schema: {
+      type: "object",
+      properties: {
+        title: { type: "string", description: "Nombre del nuevo spreadsheet." },
+        sheets: {
+          type: "array",
+          description: "Pestañas a crear. Si se omite, Google crea una sola con nombre 'Sheet1'.",
+          items: {
+            type: "object",
+            properties: { title: { type: "string" } },
+            required: ["title"],
+          },
+        },
+      },
+      required: ["title"],
+    },
+  },
+  {
     id: "bash",
     name: "bash",
     description:

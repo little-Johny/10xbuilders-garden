@@ -4,13 +4,15 @@ export const GOOGLE_PROVIDER = "google";
 export const GOOGLE_OAUTH_STATE_COOKIE = "g_oauth_state";
 
 // `openid` + `email` enable us to read the user's email at callback time and
-// show "connected as <email>" in the Settings UI. The Calendar scope is the
-// only API scope this iteration needs; adding more scopes later (Sheets, Drive)
-// reuses the same OAuth client and the same row in `user_integrations`.
+// show "connected as <email>" in the Settings UI. All Google APIs share the
+// same OAuth client and the same row in `user_integrations`; adding a new
+// scope here invalidates existing grants — users must reconnect Google to
+// authorize the new permission (Settings → Google → Disconnect → Connect).
 export const GOOGLE_OAUTH_SCOPES = [
   "openid",
   "email",
   "https://www.googleapis.com/auth/calendar.events",
+  "https://www.googleapis.com/auth/spreadsheets",
 ];
 
 const AUTHORIZE_ENDPOINT = "https://accounts.google.com/o/oauth2/v2/auth";
