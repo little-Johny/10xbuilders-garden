@@ -8,6 +8,7 @@ import {
   ToolMessage,
   type BaseMessage,
 } from "@langchain/core/messages";
+import type { RunnableConfig } from "@langchain/core/runnables";
 import { createCompactionModel } from "../model";
 import type { GraphStateType } from "../state";
 
@@ -164,6 +165,7 @@ async function appendCompactionLog(
 
 export async function compactionNode(
   state: GraphStateType,
+  nodeConfig?: RunnableConfig,
 ): Promise<Partial<GraphStateType>> {
   await appendCompactionLog("before", "entry", state.messages, {
     compactionFailures: state.compactionFailures,
@@ -240,10 +242,14 @@ export async function compactionNode(
 
   try {
     const model = createCompactionModel();
-    const response = await model.invoke([
-      new SystemMessage(COMPACTION_SYSTEM_PROMPT),
-      new HumanMessage(buildUserPrompt(headWithId)),
-    ]);
+    // Re-pasar config propaga los callbacks (tracing Langfuse) a esta llamada.
+    const response = await model.invoke(
+      [
+        new SystemMessage(COMPACTION_SYSTEM_PROMPT),
+        new HumanMessage(buildUserPrompt(headWithId)),
+      ],
+      nodeConfig,
+    );
     const raw = contentToString(response.content);
     const cleaned = stripAnalysisBlocks(raw);
 

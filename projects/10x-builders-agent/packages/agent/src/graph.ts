@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { StateGraph, Command, interrupt } from "@langchain/langgraph";
+import type { RunnableConfig } from "@langchain/core/runnables";
 import {
   HumanMessage,
   AIMessage,
@@ -16,6 +17,7 @@ import { getCheckpointer } from "./checkpointer";
 import { GraphState } from "./state";
 import { compactionNode } from "./nodes/compaction_node";
 import { makeMemoryInjectionNode } from "./memory_injection_node";
+import { createLangfuseHandler } from "./observability";
 import {
   addMessage,
   createToolCall,
@@ -140,15 +142,20 @@ export async function runAgent(input: AgentInput): Promise<AgentOutput> {
 
   const toolCallNames: string[] = [];
 
+  // Los nodos re-pasan `config` a cada invoke interno: es lo que propaga los
+  // callbacks (Langfuse) hacia las llamadas LLM y tools; sin eso la traza
+  // mostraría el grafo pero ninguna generación.
   async function agentNode(
     state: typeof GraphState.State,
+    nodeConfig?: RunnableConfig,
   ): Promise<Partial<typeof GraphState.State>> {
-    const response = await modelWithTools.invoke(state.messages);
+    const response = await modelWithTools.invoke(state.messages, nodeConfig);
     return { messages: [response] };
   }
 
   async function toolExecutorNode(
     state: typeof GraphState.State,
+    nodeConfig?: RunnableConfig,
   ): Promise<Partial<typeof GraphState.State>> {
     const lastMsg = state.messages[state.messages.length - 1];
     if (!(lastMsg instanceof AIMessage) || !lastMsg.tool_calls?.length) {
@@ -185,7 +192,7 @@ export async function runAgent(input: AgentInput): Promise<AgentOutput> {
             : null;
         try {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const result = await (matchingTool as any).invoke(tc.args);
+          const result = await (matchingTool as any).invoke(tc.args, nodeConfig);
           if (auditRow) {
             const resultStr = String(result);
             let resultJson: Record<string, unknown>;
@@ -273,7 +280,7 @@ export async function runAgent(input: AgentInput): Promise<AgentOutput> {
       // approve: execute the real side-effect now.
       try {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const result = await (matchingTool as any).invoke(tc.args);
+        const result = await (matchingTool as any).invoke(tc.args, nodeConfig);
         const resultStr = String(result);
         let resultJson: Record<string, unknown>;
         try {
@@ -336,7 +343,18 @@ export async function runAgent(input: AgentInput): Promise<AgentOutput> {
   const checkpointer = await getCheckpointer();
   const app = graph.compile({ checkpointer });
 
-  const config = { configurable: { thread_id: threadId } };
+  // Tracing (Langfuse). Handler null si no hay credenciales en el entorno.
+  const langfuseHandler = createLangfuseHandler({
+    sessionId,
+    userId,
+    threadId,
+    autonomous: !!input.autonomous,
+  });
+
+  const config: RunnableConfig = {
+    configurable: { thread_id: threadId },
+    ...(langfuseHandler ? { callbacks: [langfuseHandler] } : {}),
+  };
 
   let finalState: typeof GraphState.State;
 
@@ -389,6 +407,10 @@ export async function runAgent(input: AgentInput): Promise<AgentOutput> {
       config,
     )) as typeof GraphState.State;
   }
+
+  // El SDK de Langfuse batchea eventos en memoria; vaciamos la cola antes de
+  // devolver la respuesta para no perder trazas si el proceso se recicla.
+  await langfuseHandler?.flushAsync();
 
   // R6: detect interrupt via getState — `__interrupt__`/`tasks` keys do NOT
   // appear on the invoke result in this version of @langchain/langgraph.
