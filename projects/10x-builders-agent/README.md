@@ -101,6 +101,9 @@ Next.js carga `.env*` desde el directorio de la app **`apps/web`**, no desde la 
    | `ALLOW_FILE_TOOLS` | *(Opcional, gate)* `true`/`1` para exponer las tools `read_file`, `write_file` y `edit_file`. Sin esta variable las tres tools **no se registran**. Diseño en [docs/features/file-tools/plan.md](docs/features/file-tools/plan.md) |
    | `FILE_TOOLS_WORKSPACE_ROOT` | *(Opcional)* Si se define, las file tools confinan toda ruta dentro de ese root y aceptan paths relativos resueltos contra él. Sin definir, solo se aceptan paths absolutos y el alcance lo dictan los permisos del proceso (úsalo solo en entornos confiables) |
    | `FILE_TOOL_MAX_BYTES` | *(Opcional)* Cap defensivo de bytes para `read_file`/`write_file`/`edit_file`. Default `1000000` |
+   | `LANGFUSE_PUBLIC_KEY` | *(Opcional)* Public key del proyecto en Langfuse (tracing del agente). Sin las credenciales el tracing se desactiva silenciosamente. Setup en el paso 13 |
+   | `LANGFUSE_SECRET_KEY` | *(Opcional)* Secret key del proyecto en Langfuse |
+   | `LANGFUSE_BASE_URL` | *(Opcional)* URL de la instancia self-hosted de Langfuse (ej. `http://localhost:3001`) |
 
 Referencia de nombres: [.env.example](.env.example).
 
@@ -321,6 +324,41 @@ Guía completa (tipos de memoria, dedup, inspección, limitaciones) en [docs/fea
 
 ---
 
+## Paso 13 — Observabilidad con Langfuse (opcional)
+
+Tracing por turno del agente: cada mensaje genera una traza navegable con los nodos del grafo, las llamadas LLM (prompts, respuestas, tokens, latencia) y las tool calls. Corre **self-hosted en local** con Docker.
+
+1. **Clonar y levantar Langfuse** (fuera de este repo, es infraestructura compartida):
+
+   ```bash
+   git clone https://github.com/langfuse/langfuse.git ~/Dev/langfuse
+   cd ~/Dev/langfuse
+   docker compose up -d
+   ```
+
+   ⚠️ **Puerto**: la UI de Langfuse usa el `3000` por defecto — el mismo que esta app. Remapéalo con un `docker-compose.override.yml`:
+
+   ```yaml
+   services:
+     langfuse-web:
+       ports: !override
+         - "127.0.0.1:3001:3000"
+       environment:
+         NEXTAUTH_URL: http://localhost:3001
+   ```
+
+2. **Crear credenciales**: abre `http://localhost:3001`, regístrate (el primer usuario es local), crea una organización y un proyecto, y en **Project Settings → API Keys** genera las keys.
+
+3. **Configurar variables** en `apps/web/.env.local`: `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY` y `LANGFUSE_BASE_URL=http://localhost:3001`. Reinicia el servidor de desarrollo.
+
+4. **Validar**: envía un mensaje en `/chat` y abre **Traces** en `http://localhost:3001` — debe aparecer una traza `LangGraph` con la generación LLM y los nodos del grafo.
+
+Sin las variables, el tracing se desactiva silenciosamente y el agente funciona normal (CI, otros devs). El stack de Langfuse consume ~2–4 GB de RAM entre sus 6 contenedores: cuando no lo uses, apágalo con `docker compose down` (los datos persisten en volúmenes).
+
+Diseño y detalles en [docs/features/observability-langfuse/README.md](docs/features/observability-langfuse/README.md).
+
+---
+
 ## Comandos útiles
 
 | Comando | Descripción |
@@ -351,6 +389,8 @@ Guía completa (tipos de memoria, dedup, inspección, limitaciones) en [docs/fea
 - [docs/features/long-term-memory/README.md](docs/features/long-term-memory/README.md) — guía de uso, setup del flush por inactividad y operación de la memoria a largo plazo.
 - [docs/features/password-recovery/brief.md](docs/features/password-recovery/brief.md) — brief del flujo de recuperación de contraseña.
 - [docs/features/password-recovery/plan.md](docs/features/password-recovery/plan.md) — plan as-built del flujo de recuperación (pantallas, middleware whitelist, esquema de contraseña, toggle de visibilidad, requisitos Supabase).
+- [docs/features/observability-langfuse/plan.md](docs/features/observability-langfuse/plan.md) — plan de la observabilidad con Langfuse (decisiones, SDK, propagación de callbacks).
+- [docs/features/observability-langfuse/README.md](docs/features/observability-langfuse/README.md) — guía de la integración de Langfuse (arquitectura del tracing, configuración, operación).
 - [CHANGELOG.md](CHANGELOG.md) — historial de cambios.
 
 ---
@@ -363,5 +403,6 @@ Guía completa (tipos de memoria, dedup, inspección, limitaciones) en [docs/fea
 - **Telegram no responde**: webhook debe ser HTTPS; token y secreto correctos; visita de nuevo `/api/telegram/setup` si cambias la URL pública.
 - **Email de recuperación no llega**: el SMTP por defecto de Supabase solo envía a miembros del proyecto y tiene límite bajo. Atajos: probar con el email de tu cuenta Supabase, generar el link manualmente desde Authentication → Users, o activar SMTP custom (Resend/SendGrid).
 - **Link de recuperación cae en la home en vez de en `/reset-password`**: las URLs `…/auth/callback` no están en la whitelist de Supabase (Authentication → URL Configuration → Redirect URLs).
+- **No aparecen trazas en Langfuse**: verifica que los contenedores estén arriba (`docker compose ps` en el repo de Langfuse), que las 3 variables `LANGFUSE_*` estén en `apps/web/.env.local` (y reiniciaste el dev server tras añadirlas) y que `LANGFUSE_BASE_URL` apunte al puerto remapeado (`http://localhost:3001`, no `3000`). Si Langfuse está caído el agente sigue funcionando: el SDK loguea `ECONNREFUSED` en la consola del server y descarta las trazas de esa sesión.
 
 Si quieres, el siguiente paso natural es desplegar **Vercel** (o similar) para `apps/web`, definir las mismas variables de entorno en el panel del proveedor y usar la URL de producción en Supabase y en el webhook de Telegram.

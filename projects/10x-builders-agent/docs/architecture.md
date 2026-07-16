@@ -11,6 +11,7 @@
 | Tipos compartidos     | TypeScript                           | `packages/types`                     |
 | Config compartida     | tsconfig                             | `packages/config`                    |
 | Modelo LLM            | OpenRouter (GPT-4o-mini por defecto) | vía `@langchain/openai` con base URL |
+| Observabilidad        | Langfuse self-hosted (Docker)        | `packages/agent` vía `langfuse-langchain` |
 
 ## Estructura del monorepo
 
@@ -212,6 +213,17 @@ Si la compactación gobierna el contexto **dentro** de una sesión, la memoria a
 El umbral de inactividad es **por usuario** (`profiles.memory_flush_idle_minutes`, default 30, rango 5–1440, editable en Ajustes); `MEMORY_FLUSH_IDLE_MINUTES` es el fallback. Embeddings vía `fetch` directo a OpenRouter (`packages/agent/src/embeddings.ts`, `OPENROUTER_EMBEDDING_MODEL`).
 
 Diseño en [features/long-term-memory/plan.md](features/long-term-memory/plan.md), guía operativa en [features/long-term-memory/README.md](features/long-term-memory/README.md).
+
+## Observabilidad (Langfuse)
+
+Tracing por turno contra una instancia self-hosted de Langfuse (Docker, UI en `http://localhost:3001`):
+
+- **Handler por invocación**: `runAgent` crea un `CallbackHandler` (`packages/agent/src/observability.ts`) por turno, con `sessionId`/`userId` — Langfuse agrupa las trazas por sesión y usuario sin trabajo extra. `threadId` y `autonomous` viajan como metadata/tags.
+- **Propagación por `config`**: el handler entra en `config.callbacks` del `app.invoke(...)`, y cada nodo (`agentNode`, `toolExecutorNode`, `compactionNode`) re-pasa el `config` que recibe a sus `invoke` internos. Sin ese re-paso los callbacks no llegan a las llamadas LLM/tools y la traza mostraría solo el esqueleto del grafo.
+- **Flush explícito**: `flushAsync()` tras el invoke del grafo — el SDK batchea eventos en memoria y conviene vaciar la cola antes de responder.
+- **Degradación a no-op**: sin las variables `LANGFUSE_*` en el entorno, el handler es `null` y el agente corre sin tracing; si la instancia está caída, el SDK reintenta, descarta y loguea sin afectar el turno.
+
+Diseño en [features/observability-langfuse/plan.md](features/observability-langfuse/plan.md), guía en [features/observability-langfuse/README.md](features/observability-langfuse/README.md).
 
 ## LangChain: qué usamos
 
