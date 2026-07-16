@@ -162,7 +162,7 @@ Evaluar un agente de IA exige responder dos preguntas que el monitoreo clásico 
 
 - [LangSmith — Evaluación y observabilidad](https://docs.smith.langchain.com/evaluation) — guía oficial para definir datasets, correr evaluaciones offline/online y trazar la trayectoria de agentes.
 - [Judging LLM-as-a-Judge with MT-Bench and Chatbot Arena (Zheng et al., 2023)](https://arxiv.org/abs/2306.05685) — artículo académico sobre las limitaciones y sesgos de usar LLMs como jueces (sesgo de posición, de verbosidad, de auto-preferencia).
-- Conexión interna: [Observabilidad y Evaluación en Sistemas de IA](./01-observabilidad-y-evaluacion-en-sistemas-de-ia.md) — la sesión 1, que establece la ilusión operativa, el vibe check y el stack de calidad de 4 capas sobre el que esta clase profundiza.
+- Conexión interna: [Observabilidad y Evaluación en Sistemas de IA](./01-observability-and-evaluation-in-ai-systems.md) — la sesión 1, que establece la ilusión operativa, el vibe check y el stack de calidad de 4 capas sobre el que esta clase profundiza.
 - Conexión interna: [Fundamentos de Memoria a Largo Plazo en Agentes de IA](../week-06/04-long-term-memory-fundamentals.md) — la recuperación de documentos que el *trajectory eval* debe verificar (¿se trajo la evidencia correcta?).
 
 ## Notas personales
