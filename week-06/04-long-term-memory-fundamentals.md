@@ -2,7 +2,6 @@
 title: "Fundamentos de Memoria a Largo Plazo en Agentes de IA"
 week: 6
 lesson: 4
-module: 5003
 tags: [agentes, memoria, memoria-largo-plazo, baul-de-recuerdos, memory-flush, memory-injection, retrieval-count, memoria-episodica, memoria-semantica, memoria-procedimental, supabase, pgvector, embeddings, context-rot, llm]
 date: 2026-05-26
 status: draft
