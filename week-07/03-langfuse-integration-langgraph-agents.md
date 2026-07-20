@@ -2,7 +2,6 @@
 title: "Integración de Langfuse en Agentes de LangGraph"
 week: 7
 lesson: 3
-module: 6002
 tags: [langfuse, langgraph, langchain, observabilidad, trazas, spans, callbacks, callback-handler, docker, docker-compose, self-hosting, variables-de-entorno, sdk-typescript, caja-negra, caja-blanca, cursor, depuracion, llm, agentes]
 date: 2026-06-29
 status: draft

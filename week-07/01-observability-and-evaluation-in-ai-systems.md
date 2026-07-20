@@ -2,10 +2,9 @@
 title: "Observabilidad y Evaluación en Sistemas de Inteligencia Artificial"
 week: 7
 lesson: 1
-module: 6000
 tags: [observabilidad, evaluacion, calidad-ia, ilusion-operativa, vibe-check, sistemas-probabilisticos, monitoreo-determinista, fundamentacion, grounding, relevancia, exactitud, seguridad, regresion, stack-de-calidad, trazabilidad, langsmith, ragas, llm, agentes, rag]
 date: 2026-06-28
-status: draft
+status: done
 ---
 
 # Observabilidad y Evaluación en Sistemas de Inteligencia Artificial
