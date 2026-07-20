@@ -1,12 +1,18 @@
 ---
 name: candace-skill
-description:
-  Genera y actualiza documentación `.md` del repo: apuntes de clase en
-  `week-XX/`, READMEs de directorios, índices y resúmenes. Lee templates
-  de `docs/` y delega a sub-agentes de proyecto cuando existen. Usar
-  cuando el usuario pida apuntes de una lección, actualizar un README,
-  generar un índice o sincronizar documentación tras cambios
-  estructurales.
+description: >
+  Genera y actualiza documentación `.md` del repo 10xbuilders-garden: apuntes de
+  clase/lección/sesión en `week-XX/`, READMEs de directorios, índices y resúmenes.
+  Lee templates de `docs/` y delega a sub-agentes cuando corresponde. INVÓCALA
+  SIEMPRE que el usuario pida —con CUALQUIER redacción, aunque no use estas
+  palabras exactas— crear, escribir, redactar o "ayudar con" apuntes/notas de una
+  sesión, clase, lección o tema; convertir un temario a apuntes; o documentar una
+  clase. Ejemplos que deben dispararla: "créame los apuntes de la sesión 4",
+  "ayúdame a crear los apuntes de la semana 7", "documenta esta clase", "pásame
+  este temario a apuntes", "necesito el apunte del tema X", "hazme las notas de
+  la lección". También cuando pida crear/actualizar un README, generar un índice
+  o sincronizar documentación tras cambios estructurales del repo. Para apuntes de
+  lección, la redacción del archivo se delega a un sub-agente dedicado.
 ---
 
 # candace-skill — Documentación del repo
@@ -24,6 +30,7 @@ Toda la salida es en **español**.
 3. **Respetar `.gitignore`.** No generar documentación en directorios ignorados (`node_modules/`, `dist/`, etc.).
 4. **No generar documentos vacíos.** Todo `.md` producido debe tener contenido útil y navegable.
 5. **Proponer antes de escribir.** Siempre presentar la lista de archivos y un preview del contenido al usuario, y esperar aprobación inline.
+6. **Los apuntes de lección se escriben con un sub-agente.** Tras la aprobación, la redacción de un apunte `week-XX/` NO se hace en línea: se delega a un sub-agente dedicado (ver Paso 6). El resto de documentos (READMEs, índices, resúmenes) se escriben directamente.
 
 ---
 
@@ -119,14 +126,49 @@ Esperar respuesta del usuario:
 
 ### Paso 6 — Ejecutar
 
-Tras aprobación explícita del usuario:
+Tras aprobación explícita del usuario, ramificar según el tipo de documento:
 
-1. Escribir los archivos marcados como "Crear" o "Actualizar" usando `Write` / `Edit`.
-2. Invocar sub-agentes delegados con la tool `Agent`, pasándoles un objetivo concreto y autocontenido.
-3. Reportar al final: archivos escritos, archivos delegados (ruta + sub-agente), y cualquier fallo.
+#### 6a — Apuntes de lección (`week-XX/`) → SIEMPRE vía sub-agente
 
-Si la escritura falla → informar qué quedó escrito y qué no, sin reintentar destructivamente.
-Si un sub-agente delegado falla → ofrecer al usuario documentar directamente ese directorio como fallback.
+La redacción de un apunte no se hace en línea. Lanzar un sub-agente con la tool
+`Agent` (`subagent_type: general-purpose`) para que escriba el archivo, y pasarle
+un prompt **autocontenido** que incluya:
+
+- **Objetivo**: crear `week-XX/<NN>-<slug-en-inglés>.md` (slug kebab-case en
+  inglés, coherente con los apuntes vecinos del mismo `week-XX/`).
+- **Temario/insumo** aportado por el usuario, íntegro.
+- **Template a seguir**: `docs/lesson-note-template.md` (frontmatter + secciones).
+  El frontmatter es `title, week, lesson, tags, date, status` — **NO incluir un
+  campo `module`** (se eliminó de la convención).
+- **Referencias de estilo**: 1-2 apuntes existentes del mismo `week-XX/` para
+  calcar tono, profundidad, uso de tablas/diagramas mermaid y los cross-links
+  ("Conexión interna: [...]") a sesiones previas.
+- **Restricciones explícitas** que haya dado el usuario (p. ej. qué incluir o no
+  en "Notas personales").
+- Instrucción de **devolver la ruta del archivo escrito** y un resumen corto; el
+  sub-agente escribe el `.md` pero NO hace commits ni toca código.
+
+El preview y la aprobación (Paso 5) los hace SIEMPRE el runner del skill antes de
+delegar — el sub-agente solo redacta lo ya aprobado.
+
+#### 6b — READMEs, índices, resúmenes → escritura directa
+
+Escribir los archivos con `Write` / `Edit` en línea (no requieren sub-agente).
+
+#### 6c — Directorios de `projects/<X>/` con sub-agente propio
+
+Si el Paso 4 encontró un sub-agente de documentación del proyecto, delegarle esa
+parte con la tool `Agent`, pasándole un objetivo concreto y autocontenido.
+
+#### Reporte final
+
+Reportar: archivos escritos, archivos delegados (ruta + sub-agente), y cualquier
+fallo.
+
+Si la escritura falla → informar qué quedó escrito y qué no, sin reintentar
+destructivamente.
+Si un sub-agente delegado falla → ofrecer al usuario redactar directamente ese
+apunte/directorio como fallback.
 
 ---
 
