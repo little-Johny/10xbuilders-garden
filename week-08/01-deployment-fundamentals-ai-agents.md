@@ -2,7 +2,7 @@
 title: "Deployment Fundamentals for AI Agents"
 week: 8
 lesson: 1
-tags: [despliegue, deployment, produccion, backend, agentes, llm, latencia, costos, determinismo, no-determinismo, observabilidad, caja-negra, evaluacion, cloud-providers, railway, render, aws, url-publica, base-de-datos-persistente, tokens, cocina-de-autor]
+tags: [deployment, production, backend, agents, llm, latency, costs, determinism, non-determinism, observability, black-box, evaluation, cloud-providers, railway, render, aws, public-url, persistent-database, tokens]
 date: 2026-09-06
 status: draft
 ---

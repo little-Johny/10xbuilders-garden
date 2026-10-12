@@ -2,7 +2,7 @@
 title: "Integración de la API de GitHub en Agentes de IA"
 week: 4
 lesson: 5
-tags: [github, oauth, api, human-in-the-loop, langgraph, seguridad, tokens, openssl, telegram, stubs, client-id, client-secret]
+tags: [github, oauth, api, human-in-the-loop, langgraph, security, tokens, openssl, telegram, stubs, client-id, client-secret]
 date: 2026-04-23
 status: done
 ---

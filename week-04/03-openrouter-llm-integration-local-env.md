@@ -2,7 +2,7 @@
 title: "Integración del LLM vía OpenRouter en el entorno local"
 week: 4
 lesson: 3
-tags: [open-router, llm, api-key, env-local, variables-entorno, seguridad, tokens, monitoreo, langchain, langgraph, contexto, herramientas, pruebas]
+tags: [openrouter, llm, api-key, local-env, environment-variables, security, tokens, monitoring, langchain, langgraph, context, tools, testing]
 date: 2026-04-22
 status: done
 ---

@@ -2,7 +2,7 @@
 title: "Diseño de tareas programadas para agentes más autónomos"
 week: 5
 lesson: 5
-tags: [cron, pg-cron, supabase, scheduled-tasks, proactividad, autonomia, hitl, tool-first-design, notificaciones, telegram, multicanal]
+tags: [cron, pg-cron, supabase, scheduled-tasks, proactivity, autonomy, human-in-the-loop, tool-first-design, notifications, telegram, multichannel]
 date: 2026-05-05
 status: draft
 ---

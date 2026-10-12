@@ -2,7 +2,7 @@
 title: "Implementación end-to-end de tareas programadas"
 week: 5
 lesson: 6
-tags: [cron, pg-cron, pg-net, supabase, scheduled-tasks, time-context, system-prompt, hitl, middleware, ngrok, telegram, determinism, tool-design]
+tags: [cron, pg-cron, pg-net, supabase, scheduled-tasks, time-context, system-prompt, human-in-the-loop, middleware, ngrok, telegram, determinism, tool-design]
 date: 2026-05-10
 status: draft
 ---

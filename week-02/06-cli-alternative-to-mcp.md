@@ -2,7 +2,7 @@
 title: "CLI como Alternativa a MCP"
 week: 2
 lesson: 6
-tags: [cli, mcp, tokens, eficiencia, unix, skills, composicion]
+tags: [cli, mcp, tokens, efficiency, unix, skills, composition]
 date: 2026-03-23
 status: done
 ---

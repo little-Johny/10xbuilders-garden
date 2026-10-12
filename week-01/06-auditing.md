@@ -2,7 +2,7 @@
 title: "Code Review Forense (Auditing)"
 week: 1
 lesson: 6
-tags: [auditing, code-review, checklist, seguridad, bpir, alucinaciones]
+tags: [auditing, code-review, checklist, security, bpir, hallucinations]
 date: 2026-03-19
 status: done
 ---

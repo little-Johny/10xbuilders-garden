@@ -2,7 +2,7 @@
 title: "Bug Fixing Automatizado — Flujo de trabajo real en 10x Builders"
 week: 2
 lesson: 10
-tags: [bug-fixing, automatización, linear, tempo, claude-code, pull-request, n8n, telegram, enrichment-agent]
+tags: [bug-fixing, automation, linear, tempo, claude-code, pull-request, n8n, telegram, enrichment-agent]
 date: 2026-04-05
 status: draft
 ---

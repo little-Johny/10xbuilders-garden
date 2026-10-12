@@ -2,7 +2,7 @@
 title: "Arquitectura de IA: Agentes Autónomos vs Flujos de Trabajo"
 week: 3
 lesson: 1
-tags: [arquitectura, agentes, workflows, determinismo, sobrediseño, latencia, costos]
+tags: [architecture, agents, workflows, determinism, overengineering, latency, costs]
 date: 2026-04-05
 status: done
 ---

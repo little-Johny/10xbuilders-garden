@@ -2,7 +2,7 @@
 title: "Herramientas y Estado en LangGraph"
 week: 5
 lesson: 2
-tags: [langgraph, tools, state, config, mcp, cursor, supabase, catalog, adapters, seguridad, contexto, json-schema]
+tags: [langgraph, tools, state, config, mcp, cursor, supabase, catalog, adapters, security, context, json-schema]
 date: 2026-05-03
 status: draft
 ---

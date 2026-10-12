@@ -2,7 +2,7 @@
 title: "Golden Datasets y Evaluación Continua de Agentes"
 week: 7
 lesson: 8
-tags: [golden-dataset, datasets, experimentos, evaluacion-continua, langfuse, sdk, cursor, llm-as-a-judge, evaluador-determinista, taxonomia-de-fallos, ground-truth, human-in-the-loop, ci, pull-request, csv, expected-output, fuente-de-verdad, script-de-evaluacion, agentes, llm]
+tags: [golden-dataset, datasets, experiments, continuous-evaluation, langfuse, sdk, cursor, llm-as-a-judge, deterministic-evaluator, failure-taxonomy, ground-truth, human-in-the-loop, ci, pull-request, csv, expected-output, source-of-truth, evaluation-script, agents, llm]
 date: 2026-09-06
 status: draft
 ---

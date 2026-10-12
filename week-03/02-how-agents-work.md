@@ -2,7 +2,7 @@
 title: "¿Cómo Funciona un Agente de IA?"
 week: 3
 lesson: 2
-tags: [agentes, react, planificación, memoria, herramientas, llm, rag, chatbot]
+tags: [agents, react, planning, memory, tools, llm, rag, chatbot]
 date: 2026-04-05
 status: done
 ---

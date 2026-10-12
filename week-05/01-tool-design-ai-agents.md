@@ -2,7 +2,7 @@
 title: "Diseño y uso de Tools en agentes de IA"
 week: 5
 lesson: 1
-tags: [agentes, tools, function-calling, llm, json-schema, openrouter, postman, gemini, prompt-engineering, human-in-the-loop]
+tags: [agents, tools, function-calling, llm, json-schema, openrouter, postman, gemini, prompt-engineering, human-in-the-loop]
 date: 2026-05-03
 status: draft
 ---

@@ -2,7 +2,7 @@
 title: "Memoria a corto plazo: compactación en cascada en LangGraph"
 week: 6
 lesson: 3
-tags: [agentes, memoria, memoria-corto-plazo, compactacion, compactacion-cascada, microcompactacion, langgraph, typescript, cursor, llm, context-engineering, nodo-compaction, circuit-breaker]
+tags: [agents, memory, short-term-memory, compaction, cascading-compaction, micro-compaction, langgraph, typescript, cursor, llm, context-engineering, compaction-node, circuit-breaker]
 date: 2026-05-21
 status: done
 ---

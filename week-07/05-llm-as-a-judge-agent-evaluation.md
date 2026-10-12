@@ -2,7 +2,7 @@
 title: "Evaluación de Agentes con LLM as a Judge"
 week: 7
 lesson: 5
-tags: [evaluacion, llm-as-a-judge, evals, langfuse, gemini, google-ai-studio, evaluador, helpfulness, out-of-scope, prompt-evaluador, razonamiento, determinista, subjetiva, online, offline, ground-truth, sampling, agentes, llm]
+tags: [evaluation, llm-as-a-judge, evals, langfuse, gemini, google-ai-studio, evaluator, helpfulness, out-of-scope, evaluator-prompt, reasoning, deterministic, subjective, online, offline, ground-truth, sampling, agents, llm]
 date: 2026-07-17
 status: done
 ---

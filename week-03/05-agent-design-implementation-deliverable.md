@@ -2,7 +2,7 @@
 title: "Entregable final: diseño e implementación de agentes"
 week: 3
 lesson: 5
-tags: [diseño, planificacion, langchain, produccion, guardrails, arquitectura, brief, cursor, despliegue]
+tags: [design, planning, langchain, production, guardrails, architecture, brief, cursor, deployment]
 date: 2026-04-15
 status: done
 ---

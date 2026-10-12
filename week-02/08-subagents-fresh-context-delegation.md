@@ -2,7 +2,7 @@
 title: "SubAgents: contexto fresco y delegación"
 week: 2
 lesson: 8
-tags: [subagents, delegación, contexto, qa, code-review, cursor, flujo-de-trabajo, costo]
+tags: [subagents, delegation, context, qa, code-review, cursor, workflow, costs]
 date: 2026-03-25
 status: done
 ---

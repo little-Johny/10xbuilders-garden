@@ -2,7 +2,7 @@
 title: "MCP: Concepto y Arquitectura"
 week: 2
 lesson: 4
-tags: [mcp, arquitectura, cliente-servidor, herramientas, stdio, http]
+tags: [mcp, architecture, client-server, tools, stdio, http]
 date: 2026-03-23
 status: done
 ---

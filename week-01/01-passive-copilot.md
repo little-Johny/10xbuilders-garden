@@ -2,7 +2,7 @@
 title: "El Síndrome del Copiloto Pasivo"
 week: 1
 lesson: 1
-tags: [mindset, ia-asistida, productividad]
+tags: [mindset, ai-assisted, productivity]
 date: 2026-03-17
 status: done
 ---

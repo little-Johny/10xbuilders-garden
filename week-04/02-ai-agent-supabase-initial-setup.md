@@ -2,7 +2,7 @@
 title: "Configuración inicial de un agente de IA con Supabase"
 week: 4
 lesson: 2
-tags: [supabase, nodejs, npm, postgres, autenticacion, migraciones-sql, env, onboarding, open-router, backend]
+tags: [supabase, nodejs, npm, postgres, authentication, sql-migrations, environment-variables, onboarding, openrouter, backend]
 date: 2026-04-22
 status: done
 ---

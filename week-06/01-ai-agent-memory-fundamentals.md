@@ -2,7 +2,7 @@
 title: "Memoria en Agentes de IA: Fundamentos"
 week: 6
 lesson: 1
-tags: [agentes, memoria, contexto, ventana-de-contexto, compactacion, memoria-corto-plazo, memoria-largo-plazo, memoria-episodica, memoria-semantica, memoria-procedimental, llm]
+tags: [agents, memory, context, context-window, compaction, short-term-memory, long-term-memory, episodic-memory, semantic-memory, procedural-memory, llm]
 date: 2026-05-12
 status: done
 ---

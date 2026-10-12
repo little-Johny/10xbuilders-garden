@@ -2,7 +2,7 @@
 title: "Evaluación y Observabilidad de Agentes de IA"
 week: 7
 lesson: 2
-tags: [evaluacion, observabilidad, agentes, output-eval, trajectory-eval, evaluacion-offline, evaluacion-online, golden-dataset, ciclo-mejora-continua, banderas-rojas, llm-as-a-judge, calibracion-humana, datos-sinteticos, edge-cases, trazas, regresion, langsmith, llm]
+tags: [evaluation, observability, agents, output-eval, trajectory-eval, offline-evaluation, online-evaluation, golden-dataset, continuous-improvement-cycle, red-flags, llm-as-a-judge, human-calibration, synthetic-data, edge-cases, traces, regression, langsmith, llm]
 date: 2026-06-29
 status: draft
 ---

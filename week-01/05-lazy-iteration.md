@@ -2,7 +2,7 @@
 title: "Implementación y Lazy Iteration"
 week: 1
 lesson: 5
-tags: [lazy-iteration, implementación, revisión-humana, bug-bash, tdd]
+tags: [lazy-iteration, implementation, human-review, bug-bash, tdd]
 date: 2026-03-19
 status: done
 ---

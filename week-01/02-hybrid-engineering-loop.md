@@ -2,7 +2,7 @@
 title: "Fundamentos: El Loop de Ingeniería Híbrida"
 week: 1
 lesson: 2
-tags: [bpir, proceso, ia-asistida, brief, plan, review]
+tags: [bpir, process, ai-assisted, brief, plan, review]
 date: 2026-03-19
 status: done
 ---

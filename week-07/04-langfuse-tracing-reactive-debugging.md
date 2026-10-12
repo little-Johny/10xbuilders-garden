@@ -2,7 +2,7 @@
 title: "Tracing y Observabilidad de Agentes de IA con Langfuse"
 week: 7
 lesson: 4
-tags: [langfuse, observabilidad, tracing, trazas, spans, observaciones, sesiones, dashboard, depuracion, debugging-reactivo, latencia, costos, system-prompt, human-in-the-loop, llm, langgraph, tool-calls, agentes]
+tags: [langfuse, observability, tracing, traces, spans, observations, sessions, dashboard, debugging, reactive-debugging, latency, costs, system-prompt, human-in-the-loop, llm, langgraph, tool-calls, agents]
 date: 2026-07-16
 status: done
 ---

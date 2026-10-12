@@ -2,7 +2,7 @@
 title: "Barreras de seguridad en agentes de IA"
 week: 3
 lesson: 4
-tags: [guardrails, seguridad, prompt-injection, alucinaciones, autonomia, permisos, herramientas, arquitectura, pii, bucle]
+tags: [guardrails, security, prompt-injection, hallucinations, autonomy, permissions, tools, architecture, pii, loop]
 date: 2026-04-14
 status: done
 ---

@@ -2,7 +2,7 @@
 title: "Los 4 Componentes: Reglas, Skills, MCPs, SubAgents"
 week: 2
 lesson: 2
-tags: [reglas, skills, mcps, subagents, arquitectura, sistemas, orquestacion]
+tags: [rules, skills, mcp, subagents, architecture, systems, orchestration]
 date: 2026-03-16
 status: done
 ---

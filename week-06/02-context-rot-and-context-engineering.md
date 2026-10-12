@@ -2,7 +2,7 @@
 title: "Context Rot y Context Engineering: por qué una ventana grande no basta"
 week: 6
 lesson: 2
-tags: [agentes, memoria, ventana-de-contexto, context-rot, context-engineering, tokens, atencion, aguja-en-pajar, rag, levenshtein, llm]
+tags: [agents, memory, context-window, context-rot, context-engineering, tokens, attention, rag, levenshtein, llm]
 date: 2026-05-14
 status: done
 

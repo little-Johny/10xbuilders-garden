@@ -2,7 +2,7 @@
 title: "De Jugador Estrella a Director Tecnico"
 week: 2
 lesson: 1
-tags: [mindset, escalabilidad, agentes, orquestacion, skills, mcps, subagents]
+tags: [mindset, scalability, agents, orchestration, skills, mcp, subagents]
 date: 2026-03-16
 status: done
 ---

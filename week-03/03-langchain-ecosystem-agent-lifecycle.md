@@ -2,7 +2,7 @@
 title: "Introducción a LangChain y agentes de IA"
 week: 3
 lesson: 3
-tags: [langchain, langgraph, langsmith, deep-agents, llm, agentes, frameworks, ciclo de vida, producción, observabilidad]
+tags: [langchain, langgraph, langsmith, deep-agents, llm, agents, frameworks, lifecycle, production, observability]
 date: 2026-04-06
 status: done
 ---

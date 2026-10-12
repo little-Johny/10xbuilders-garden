@@ -2,7 +2,7 @@
 title: "El Arte del Technical Brief (Architecting)"
 week: 1
 lesson: 3
-tags: [technical-brief, contexto, architecting, definition-of-done, constraints]
+tags: [technical-brief, context, architecting, definition-of-done, constraints]
 date: 2026-03-19
 status: done
 ---

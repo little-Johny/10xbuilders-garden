@@ -2,7 +2,7 @@
 title: "Implementación de Human in the Loop en LangGraph"
 week: 5
 lesson: 3
-tags: [langgraph, human-in-the-loop, hitl, interrupt, resume, triage, supabase, postgres, checkpointer, bash, seguridad, aprobaciones, telegram]
+tags: [langgraph, human-in-the-loop, interrupt, resume, triage, supabase, postgres, checkpointer, bash, security, approvals, telegram]
 date: 2026-05-03
 status: draft
 ---

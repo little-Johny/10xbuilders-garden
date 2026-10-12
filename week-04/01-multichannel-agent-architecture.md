@@ -2,7 +2,7 @@
 title: "Arquitectura de un agente inteligente multicanal"
 week: 4
 lesson: 1
-tags: [monorepo, turborepo, nextjs, langgraph, langchain, supabase, typescript, open-router, gpt-4o, arquitectura, multicanal]
+tags: [monorepo, turborepo, nextjs, langgraph, langchain, supabase, typescript, openrouter, gpt-4o, architecture, multichannel]
 date: 2026-04-18
 status: done
 ---

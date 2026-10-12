@@ -2,7 +2,7 @@
 title: "Crear e integrar un SubAgent de QA Engineer"
 week: 2
 lesson: 9
-tags: [subagents, qa, cursor, testing, delegación, agent-browser, rules]
+tags: [subagents, qa, cursor, testing, delegation, agent-browser, rules]
 date: 2026-03-26
 status: done
 ---

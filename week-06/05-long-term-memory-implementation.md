@@ -2,7 +2,7 @@
 title: "Implementación de Memoria a Largo Plazo con Supabase"
 week: 6
 lesson: 5
-tags: [agentes, memoria, memoria-largo-plazo, memory-flush, memory-injection, busqueda-semantica, embeddings, pgvector, supabase, cursor, retrieval-count, match-memories, dedup, migraciones, typescript, llm]
+tags: [agents, memory, long-term-memory, memory-flush, memory-injection, semantic-search, embeddings, pgvector, supabase, cursor, retrieval-count, match-memories, dedup, migrations, typescript, llm]
 date: 2026-05-28
 status: done
 ---

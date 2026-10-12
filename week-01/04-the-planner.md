@@ -2,7 +2,7 @@
 title: "Planificación y Negociación (The Planner)"
 week: 1
 lesson: 4
-tags: [planificación, the-planner, brief, arquitectura, negociación]
+tags: [planning, the-planner, brief, architecture, negotiation]
 date: 2026-03-19
 status: done
 ---

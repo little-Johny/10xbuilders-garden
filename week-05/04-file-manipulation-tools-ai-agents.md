@@ -2,7 +2,7 @@
 title: "Herramientas de manipulación de archivos para agentes IA"
 week: 5
 lesson: 4
-tags: [file-tools, read-file, write-file, edit-file, nodejs, fs, sandbox, hitl, telegram, seguridad, validacion, encapsulacion, env-vars]
+tags: [file-tools, read-file, write-file, edit-file, nodejs, fs, sandbox, human-in-the-loop, telegram, security, validation, encapsulation, environment-variables]
 date: 2026-05-05
 status: draft
 ---

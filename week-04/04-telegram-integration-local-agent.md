@@ -2,7 +2,7 @@
 title: "Integración de un agente de IA local con Telegram"
 week: 4
 lesson: 4
-tags: [telegram, bot-father, ngrok, webhook, token, variables-entorno, vinculacion-cuentas, sesiones-activas, omnicanal, integracion]
+tags: [telegram, bot-father, ngrok, webhook, tokens, environment-variables, account-linking, active-sessions, omnichannel, integration]
 date: 2026-04-22
 status: done
 ---
