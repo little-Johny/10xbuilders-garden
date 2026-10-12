@@ -2,7 +2,7 @@
 title: "Título de la Lección"
 week: 1
 lesson: 0
-tags: []
+tags: [] # inglés, minúsculas, kebab-case, solo ASCII (sin tildes ni espacios); plural en sustantivos contables; entre 5 y 15
 date: YYYY-MM-DD
 status: draft # draft | in-progress | done
 ---

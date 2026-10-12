@@ -7,7 +7,7 @@ A partir del temario/contenido de clase que te comparto, generá un archivo de a
 ### Reglas
 
 1. **No copies el contenido literal.** Destilá los conceptos: reformulá con tus palabras, sintetizá, y capturá la esencia de cada idea.
-2. **Completá el frontmatter** con los datos correctos (title, week, lesson, tags, date de hoy, status: draft).
+2. **Completá el frontmatter** con los datos correctos (title, week, lesson, tags, date de hoy, status: draft). Los **tags** van en **inglés**, en minúsculas y kebab-case, solo ASCII (sin tildes ni espacios), en plural cuando sean sustantivos contables (`agents`, `tools`, `traces`), con los nombres de herramientas tal cual (`langgraph`, `supabase`) y entre 5 y 15. Reutilizá los tags de apuntes existentes en lugar de inventar variantes (p. ej. `human-in-the-loop`, no `hitl`; `deployment`, no `deploy`).
 3. **Síntesis (blockquote inicial):** una o dos frases que planteen la **tesis** de la lección, no un índice de temas.
 4. **Introducción:** un párrafo que sitúe el tema para un lector que no asistió a la clase.
 5. **Objetivos de aprendizaje:** 2–4 resultados; redactalos en prosa breve o lista **numerada**. Evitá viñetas con `-` como formato principal.
