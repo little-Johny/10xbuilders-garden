@@ -6,7 +6,6 @@ tags: [golden-dataset, datasets, experiments, continuous-evaluation, langfuse, s
 date: 2026-09-06
 status: draft
 ---
-
 # Golden Datasets y Evaluación Continua de Agentes
 
 > **Síntesis.** Calificar una traza suelta prueba que el agente *funcionó una vez*; para saber si un cambio en un prompt o una herramienta **mejora o empeora** el sistema hace falta una vara fija contra la cual medir siempre lo mismo. Esa vara es el **golden dataset**: una lista curada y validada por humanos de entradas (`input`) y salidas esperadas (`expected_output`) que actúa como **fuente de verdad**. No es un archivo estático sino un **organismo vivo** que crece por un ciclo de mejora continua —observar trazas reales, clasificar sus fallos en una taxonomía, agregar los casos difíciles—, de modo que el agente se evalúa siempre contra los escenarios que históricamente le costaron más. Sobre ese dataset se corren **experimentos**: ejecuciones automatizadas donde todo el conjunto pasa por el agente actual y cada respuesta se compara con la esperada mediante dos tipos de evaluador —**determinístico** (reglas de código: ¿contiene 'reembolso'?, ¿el JSON tiene la llave 'id'?) o **LLM-as-a-judge** (otro modelo juzga la intención)—. El pegamento es un **script puente** generado con Cursor y ejecutado con el SDK de Langfuse: son los "tests unitarios" del comportamiento no determinista de la IA, y su premio es poder correrlos en cada **Pull Request**.
